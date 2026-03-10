@@ -1,0 +1,202 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - macos
+          - linux
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'windows') || github.event_name == 'push'
+    permissions:
+      contents: write
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Nova Link ${{ github.ref_name }}'
+          releaseBody: |
+            ## Download
+
+            Download the installer for your platform:
+            - **Windows**: Nova Link_x.x.x_x64-setup.exe
+            - **macOS**: Nova Link_x.x.x_x64.dmg / Nova Link_x.x.x_aarch64.dmg
+            - **Linux**: Nova Link_x.x.x_amd64.AppImage
+          releaseDraft: false
+          prerelease: false
+
+  build-macos:
+    if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'macos') || github.event_name == 'push'
+    permissions:
+      contents: write
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Nova Link ${{ github.ref_name }}'
+          releaseBody: |
+            ## Download
+
+            Download the installer for your platform:
+            - **Windows**: Nova Link_x.x.x_x64-setup.exe
+            - **macOS**: Nova Link_x.x.x_x64.dmg / Nova Link_x.x.x_aarch64.dmg
+            - **Linux**: Nova Link_x.x.x_amd64.AppImage
+          releaseDraft: false
+          prerelease: false
+
+  build-macos-universal:
+    if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'macos') || github.event_name == 'push'
+    permissions:
+      contents: write
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: 'x86_64-apple-darwin,aarch64-apple-darwin'
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Universal macOS app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Nova Link ${{ github.ref_name }}'
+          releaseBody: |
+            ## Download
+
+            Download the installer for your platform:
+            - **Windows**: Nova Link_x.x.x_x64-setup.exe
+            - **macOS**: Nova Link_x.x.x_x64.dmg / Nova Link_x.x.x_aarch64.dmg / Nova Link_x.x.x_universal.dmg
+            - **Linux**: Nova Link_x.x.x_amd64.AppImage
+          releaseDraft: false
+          prerelease: false
+          args: '--target x86_64-apple-darwin --target aarch64-apple-darwin'
+
+  build-linux:
+    if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'linux') || github.event_name == 'push'
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libxdo-dev libssl-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Nova Link ${{ github.ref_name }}'
+          releaseBody: |
+            ## Download
+
+            Download the installer for your platform:
+            - **Windows**: Nova Link_x.x.x_x64-setup.exe
+            - **macOS**: Nova Link_x.x.x_x64.dmg / Nova Link_x.x.x_aarch64.dmg
+            - **Linux**: Nova Link_x.x.x_amd64.AppImage
+          releaseDraft: false
+          prerelease: false
