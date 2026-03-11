@@ -9,6 +9,16 @@ const hmrPort = parseInt(process.env.VITE_HMR_PORT || "18081")
 export default defineConfig(async () => ({
 	plugins: [vue()],
 	clearScreen: false,
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					"pixi-core": ["pixi.js"],
+					"pixi-live2d": ["pixi-live2d-display"],
+				},
+			},
+		},
+	},
 	server: {
 		port,
 		strictPort: true,

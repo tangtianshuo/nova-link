@@ -98,24 +98,30 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build Universal macOS app (DMG)
+      - name: Build Intel macOS app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Nova Link ${{ github.ref_name }}'
+          tagName: ${{ github.ref_name }}-x86
+          releaseName: 'Nova Link ${{ github.ref_name }} (Intel)'
           releaseBody: |
-            ## Download
-
-            Download the installer for your platform:
-
-            ### Windows
-            - **MSI Installer** (推荐): Nova Link_x.x.x_x64.msi - 支持选择安装路径
-            - **Portable**: Nova Link_x.x.x_x64.exe
-
-            ### macOS
-            - **Universal**: Nova Link_x.x.x_universal.dmg
+            ### macOS Intel (x86_64)
+            Nova Link_x.x.x_x64.dmg
           releaseDraft: false
           prerelease: false
-          args: '--bundles dmg --target universal2-apple-darwin'
+          args: '--bundles dmg --target x86_64-apple-darwin'
+
+      - name: Build Apple Silicon macOS app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}-arm
+          releaseName: 'Nova Link ${{ github.ref_name }} (Apple Silicon)'
+          releaseBody: |
+            ### macOS Apple Silicon (aarch64)
+            Nova Link_x.x.x_aarch64.dmg
+          releaseDraft: false
+          prerelease: false
+          args: '--bundles dmg --target aarch64-apple-darwin'
