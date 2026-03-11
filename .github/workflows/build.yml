@@ -115,9 +115,7 @@ jobs:
             - **Portable**: Nova Link_x.x.x_x64.exe
 
             ### macOS
-            - **Intel**: Nova Link_x.x.x_x64.dmg
-            - **Apple Silicon**: Nova Link_x.x.x_aarch64.dmg
             - **Universal**: Nova Link_x.x.x_universal.dmg
           releaseDraft: false
           prerelease: false
-          args: '--bundles dmg --target x86_64-apple-darwin --target aarch64-apple-darwin'
+          args: '--bundles dmg --target universal2-apple-darwin'
