@@ -46,7 +46,7 @@ body {
 	flex-direction: column;
 	background: var(--bg-glass-dark);
 	backdrop-filter: blur(12px);
-	border-radius: 16px;
+	-webkit-backdrop-filter: blur(12px);
 	overflow: hidden;
 	pointer-events: none;
 }

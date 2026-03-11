@@ -271,6 +271,32 @@ pub fn run() {
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");
 
+            // 平台特定的透明窗口处理
+            #[cfg(target_os = "macos")]
+            {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    // macOS 上启用透明需要设置 NSWindow 的相关属性
+                    // 通过 JavaScript 注入来确保透明生效
+                    if let Err(e) = window.eval("document.body.style.background = 'transparent'; document.documentElement.style.background = 'transparent';") {
+                        println!("[WARN] Failed to set transparent style: {}", e);
+                    }
+                    println!("[DEBUG] macOS transparent window setup complete");
+                }
+            }
+
+            // Windows 透明窗口处理
+            #[cfg(target_os = "windows")]
+            {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Err(e) = window.eval("document.body.style.background = 'transparent'; document.documentElement.style.background = 'transparent';") {
+                        println!("[WARN] Failed to set transparent style: {}", e);
+                    }
+                    println!("[DEBUG] Windows transparent window setup complete");
+                }
+            }
+
             // 简单的窗口位置恢复
             if let Ok(Some(pos)) = get_window_position() {
                 if let Some(window) = app.get_webview_window("main") {
