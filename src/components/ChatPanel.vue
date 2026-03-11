@@ -60,7 +60,7 @@
 				v-for="(msg, index) in messages"
 				:key="index"
 				class="message"
-				:class="msg.type"
+				:class="msg.type !== 'user' ? 'bot' : 'user'"
 			>
 				{{ msg.content }}
 			</div>
@@ -76,7 +76,12 @@
 				autocomplete="off"
 				@keypress="handleKeyPress"
 			/>
-			<button id="send-btn" @click="send">Send</button>
+			<button
+				id="send-btn"
+				@click="send"
+			>
+				Send
+			</button>
 		</div>
 	</div>
 
@@ -142,12 +147,22 @@
 		align-self: flex-end;
 		background: linear-gradient(135deg, #22d3ee, #3b82f6);
 		color: white;
+		border-radius: 16px;
+		padding: 14px 18px;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 	}
 
-	.message.bot {
+	.message.bot,
+	div[class*="bot"] {
 		align-self: flex-start;
-		background: rgba(255, 255, 255, 0.1);
+		background: rgba(26, 39, 70, 0.65) !important;
+		backdrop-filter: blur(16px) !important;
+		-webkit-backdrop-filter: blur(16px) !important;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: 16px;
+		padding: 14px 18px;
 		color: #e2e8f0;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 	}
 
 	#input-area {
