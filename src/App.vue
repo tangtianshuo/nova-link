@@ -82,15 +82,11 @@ async function setupTauriListeners() {
 }
 
 function setupEventListeners() {
-  const sendBtn = document.getElementById("send-btn")
-  sendBtn?.addEventListener("click", handleSendMessage)
-
   document.addEventListener("contextmenu", handleContextMenu)
   document.addEventListener("click", handleDocumentClick)
 }
 
-function handleSendMessage() {
-  const content = inputMessage.value.trim()
+function handleSendMessage(content: string) {
   if (!content) return
 
   if (settings.value.chatProvider === "llm") {
@@ -102,7 +98,6 @@ function handleSendMessage() {
 
 async function sendViaGateway(content: string) {
   addMessage("user", content)
-  inputMessage.value = ""
 
   if (isConnected()) {
     try {
@@ -117,7 +112,6 @@ async function sendViaGateway(content: string) {
 
 async function sendViaLlm(content: string) {
   addMessage("user", content)
-  inputMessage.value = ""
 
   if (settings.value.llmProvider !== "none" && settings.value.llmApiKey && settings.value.llmApiUrl && settings.value.llmModel) {
     startThinking()
@@ -305,7 +299,7 @@ onMounted(() => {
       :visible="isChatVisible"
       :messages="messages"
       :ws-status="wsStatus"
-      @send="() => {}"
+      @send="handleSendMessage"
       @toggle="toggleChat"
     />
     <SettingsModal

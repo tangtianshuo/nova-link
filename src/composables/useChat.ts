@@ -1,6 +1,4 @@
 import { ref, nextTick } from "vue"
-import { invoke } from "@tauri-apps/api/core"
-import { useSettings } from "./useSettings"
 
 export interface ChatMessage {
   type: "user" | "bot"
@@ -8,10 +6,7 @@ export interface ChatMessage {
 }
 
 export function useChat() {
-  const { settings } = useSettings()
-
   const messages = ref<ChatMessage[]>([])
-  const inputMessage = ref("")
   const isChatVisible = ref(false)
   const isSending = ref(false)
   let lastBotMessageEl: HTMLElement | null = null
@@ -47,58 +42,6 @@ export function useChat() {
     lastBotMessageEl = null
   }
 
-  async function sendViaLlm(content: string): Promise<void> {
-    if (
-      settings.value.llmProvider !== "none" &&
-      settings.value.llmApiKey &&
-      settings.value.llmApiUrl &&
-      settings.value.llmModel
-    ) {
-      addMessage("bot", "正在思考...")
-
-      const response = await invoke<string>("chat_with_llm", {
-        provider: settings.value.llmProvider,
-        apiKey: settings.value.llmApiKey,
-        apiUrl: settings.value.llmApiUrl,
-        model: settings.value.llmModel,
-        message: content,
-      })
-
-      const msgEls = document.querySelectorAll(".message.bot")
-      const lastBotMsg = msgEls[msgEls.length - 1]
-      if (lastBotMsg && lastBotMsg.textContent === "正在思考...") {
-        lastBotMsg.textContent = response
-      } else {
-        addMessage("bot", response)
-      }
-    } else {
-      addMessage("bot", "未配置 LLM。请在设置中配置 LLM API。")
-    }
-  }
-
-  async function sendMessage(sendViaWs: () => Promise<void>): Promise<void> {
-    const content = inputMessage.value.trim()
-    if (!content || isSending.value) return
-
-    isSending.value = true
-
-    try {
-      addMessage("user", content)
-      inputMessage.value = ""
-
-      if (settings.value.chatProvider === "llm") {
-        await sendViaLlm(content)
-      } else {
-        await sendViaWs()
-      }
-    } catch (e) {
-      console.error("Failed to send message:", e)
-      addMessage("bot", `发送失败: ${e}`)
-    } finally {
-      isSending.value = false
-    }
-  }
-
   function updateLastBotMessage(text: string): void {
     if (lastBotMessageEl) {
       lastBotMessageEl.textContent = text
@@ -127,13 +70,11 @@ export function useChat() {
 
   return {
     messages,
-    inputMessage,
     isChatVisible,
     isSending,
     addMessage,
     toggleChat,
     clearMessages,
-    sendMessage,
     updateLastBotMessage,
     startThinking,
     stopStreaming,

@@ -76,7 +76,7 @@
 				autocomplete="off"
 				@keypress="handleKeyPress"
 			/>
-			<button id="send-btn">Send</button>
+			<button id="send-btn" @click="send">Send</button>
 		</div>
 	</div>
 
