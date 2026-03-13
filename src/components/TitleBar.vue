@@ -2,6 +2,10 @@
 	import { getCurrentWindow } from "@tauri-apps/api/window"
 	import { onMounted, ref } from "vue"
 
+	const props = defineProps<{
+		wsStatus?: string
+	}>()
+
 	const emit = defineEmits<{
 		close: []
 	}>()
@@ -22,6 +26,10 @@
 		}
 	}
 
+	function getStatusClass(): string {
+		return props.wsStatus || "disconnected"
+	}
+
 	onMounted(() => {
 		dragRegion.value = document.getElementById("drag-region")
 		closeBtn.value = document.getElementById("close-btn")
@@ -40,6 +48,14 @@
 
 <template>
 	<div id="drag-region"></div>
+	<div id="status-indicator">
+		<span
+			id="ws-status"
+			class="status unselectable"
+			:class="getStatusClass()"
+			>●</span
+		>
+	</div>
 	<button
 		id="close-btn"
 		class="title-bar-btn close-btn unselectable"
@@ -88,5 +104,33 @@
 
 	.close-btn:hover {
 		background: #ef4444;
+	}
+
+	#status-indicator {
+		position: absolute;
+		top: 12px;
+		right: 48px;
+		z-index: 50;
+	}
+
+	.status {
+		display: inline-block;
+		font-size: 10px;
+	}
+
+	.status.connected {
+		color: #22c55e;
+	}
+
+	.status.connecting {
+		color: #eab308;
+	}
+
+	.status.disconnected {
+		color: #6b7280;
+	}
+
+	.status.error {
+		color: #ef4444;
 	}
 </style>

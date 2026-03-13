@@ -542,7 +542,7 @@
 
 <template>
 	<div id="app">
-		<TitleBar @close="handleAppClose" />
+		<TitleBar :ws-status="wsStatus" @close="handleAppClose" />
 		<Live2DContainer
 			:has-model="hasModel"
 			@click="handleLive2DClick"

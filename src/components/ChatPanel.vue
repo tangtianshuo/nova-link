@@ -57,10 +57,6 @@
 			send()
 		}
 	}
-
-	function getStatusClass(): string {
-		return props.wsStatus || "disconnected"
-	}
 </script>
 
 <template>
@@ -98,15 +94,6 @@
 				Send
 			</button>
 		</div>
-	</div>
-
-	<div id="status-indicator">
-		<span
-			id="ws-status"
-			class="status unselectable"
-			:class="getStatusClass()"
-			>●</span
-		>
 	</div>
 </template>
 
@@ -247,33 +234,5 @@
 
 	#input-area button:hover {
 		opacity: 0.9;
-	}
-
-	#status-indicator {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		z-index: 50;
-	}
-
-	.status {
-		display: inline-block;
-		font-size: 10px;
-	}
-
-	.status.connected {
-		color: #22c55e;
-	}
-
-	.status.connecting {
-		color: #eab308;
-	}
-
-	.status.disconnected {
-		color: #6b7280;
-	}
-
-	.status.error {
-		color: #ef4444;
 	}
 </style>
