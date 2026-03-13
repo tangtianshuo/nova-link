@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, onMounted, watch, nextTick } from "vue"
+	import { ref, reactive, onMounted, watch, nextTick } from "vue"
 	import { listen } from "@tauri-apps/api/event"
 	import { invoke } from "@tauri-apps/api/core"
 	import {
@@ -15,9 +15,76 @@
 		ChatPanel,
 		CharacterSettingsModal,
 		ContextMenu,
+		Dialog,
 	} from "./components"
 
 	const { settings, loadSettings } = useSettings()
+
+	// 全局 Dialog 状态
+	const dialogVisible = ref(false)
+	const dialogOptions = reactive({
+		message: "",
+		title: "",
+		type: "info" as "info" | "warning" | "error" | "success",
+		showCancel: false,
+		confirmText: "",
+		cancelText: "",
+	})
+	let resolveConfirm: ((value: boolean) => void) | null = null
+
+	function showGlobalDialog(options: {
+		message: string
+		title?: string
+		type?: "info" | "warning" | "error" | "success"
+		showCancel?: boolean
+		confirmText?: string
+		cancelText?: string
+	}) {
+		Object.assign(dialogOptions, options)
+		dialogVisible.value = true
+	}
+
+	function showGlobalConfirm(options: {
+		message: string
+		title?: string
+		type?: "info" | "warning" | "error" | "success"
+		showCancel?: boolean
+		confirmText?: string
+		cancelText?: string
+	}): Promise<boolean> {
+		return new Promise((resolve) => {
+			resolveConfirm = resolve
+			Object.assign(dialogOptions, {
+				...options,
+				showCancel: true,
+				confirmText: options.confirmText || "确定",
+				cancelText: options.cancelText || "取消",
+			})
+			dialogVisible.value = true
+		})
+	}
+
+	function handleDialogConfirm() {
+		dialogVisible.value = false
+		if (resolveConfirm) {
+			resolveConfirm(true)
+			resolveConfirm = null
+		}
+	}
+
+	function handleDialogCancel() {
+		dialogVisible.value = false
+		if (resolveConfirm) {
+			resolveConfirm(false)
+			resolveConfirm = null
+		}
+	}
+
+	// 暴露全局 Dialog 方法到 window
+	if (typeof window !== "undefined") {
+		;(window as any).$showDialog = showGlobalDialog
+		;(window as any).$showConfirm = showGlobalConfirm
+	}
 	const {
 		initLive2D,
 		loadLive2DModel,
@@ -508,6 +575,19 @@
 			@reset-to-idle="handleResetToIdle"
 			@run-gateway="handleRunGateway"
 			@reconnect-ws="handleReconnectWs"
+		/>
+		<!-- 全局 Dialog -->
+		<Dialog
+			:visible="dialogVisible"
+			:title="dialogOptions.title"
+			:message="dialogOptions.message"
+			:type="dialogOptions.type"
+			:show-cancel="dialogOptions.showCancel"
+			:confirm-text="dialogOptions.confirmText"
+			:cancel-text="dialogOptions.cancelText"
+			@close="handleDialogCancel"
+			@confirm="handleDialogConfirm"
+			@cancel="handleDialogCancel"
 		/>
 	</div>
 </template>

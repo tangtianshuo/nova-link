@@ -14,6 +14,10 @@
 
 	const { settings, saveSettings, updateLlmConfig } = useSettings()
 
+	// 全局 Dialog 方法
+	const gShowDialog = (window as any).$showDialog
+	const gShowConfirm = (window as any).$showConfirm
+
 	// ============ 窗口尺寸约束 ============
 
 	// 获取父窗口尺寸
@@ -82,79 +86,6 @@
 
 	// 同步状态
 	const syncing = ref(false)
-
-	// Dialog 状态
-	const dialogVisible = ref(false)
-	const dialogOptions = ref({
-		title: "",
-		message: "",
-		type: "info" as "info" | "warning" | "error" | "success",
-		showCancel: true,
-		confirmText: "",
-		cancelText: "",
-	})
-
-	// Dialog 处理函数
-	function showDialog(options: {
-		message: string
-		title?: string
-		type?: "info" | "warning" | "error" | "success"
-		showCancel?: boolean
-		confirmText?: string
-		cancelText?: string
-	}) {
-		dialogOptions.value = {
-			message: options.message,
-			title: options.title || "",
-			type: options.type || "info",
-			showCancel: options.showCancel ?? true,
-			confirmText: options.confirmText || "确定",
-			cancelText: options.cancelText || "取消",
-		}
-		dialogVisible.value = true
-	}
-
-	function showConfirm(message: string, title?: string): Promise<boolean> {
-		return new Promise((resolve) => {
-			dialogOptions.value = {
-				message,
-				title: title || "确认",
-				type: "warning",
-				showCancel: true,
-				confirmText: "确定",
-				cancelText: "取消",
-			}
-			dialogVisible.value = true
-
-			const handleConfirm = () => {
-				dialogVisible.value = false
-				cleanup()
-				resolve(true)
-			}
-			const handleCancel = () => {
-				dialogVisible.value = false
-				cleanup()
-				resolve(false)
-			}
-			const cleanup = () => {
-				offConfirm.value = undefined
-				offCancel.value = undefined
-			}
-			offConfirm.value = handleConfirm
-			offCancel.value = handleCancel
-		})
-	}
-
-	const offConfirm = ref<(() => void) | undefined>(undefined)
-	const offCancel = ref<(() => void) | undefined>(undefined)
-
-	function handleDialogConfirm() {
-		offConfirm.value?.()
-	}
-
-	function handleDialogCancel() {
-		offCancel.value?.()
-	}
 
 	// 应用设置
 	const localSettings = reactive<AppSettings>({ ...settings.value })
@@ -306,7 +237,7 @@
 
 			// 如果有 OpenClaw 相关的警告，显示给用户
 			if (saveWarnings.value.length > 0) {
-				showDialog({
+				gShowDialog({
 					message:
 						"部分设置已保存到本地，但 OpenClaw 目录保存失败：\n\n" +
 						saveWarnings.value.join("\n\n"),
@@ -321,7 +252,7 @@
 			emit("close")
 		} catch (e) {
 			console.error("Failed to save:", e)
-			showDialog({ message: "保存失败：" + e, type: "error" })
+			gShowDialog({ message: "保存失败：" + e, type: "error" })
 		} finally {
 			saving.value = false
 		}
@@ -331,10 +262,10 @@
 	// 注意：由于保存时已自动同步，此功能现在用于手动触发同步
 
 	async function syncToOpenClaw() {
-		const confirmed = await showConfirm(
-			"确定要重新同步到 OpenClaw 工作目录吗？\n\n这将覆盖 ~/.openclaw/workspace/ 下的 Soul 设置文件。",
-			"确认同步",
-		)
+		const confirmed = await gShowConfirm({
+			message: "确定要重新同步到 OpenClaw 工作目录吗？\n\n这将覆盖 ~/.openclaw/workspace/ 下的 Soul 设置文件。",
+			title: "确认同步",
+		})
 		if (!confirmed) return
 
 		syncing.value = true
@@ -352,13 +283,13 @@
 			})
 
 			if (result.openclaw_warning) {
-				showDialog({ message: result.openclaw_warning, type: "warning" })
+				gShowDialog({ message: result.openclaw_warning, type: "warning" })
 			} else {
-				showDialog({ message: "已同步到 OpenClaw 工作目录", type: "success" })
+				gShowDialog({ message: "已同步到 OpenClaw 工作目录", type: "success" })
 			}
 		} catch (e) {
 			console.error("Sync failed:", e)
-			showDialog({ message: "同步失败：" + e, type: "error" })
+			gShowDialog({ message: "同步失败：" + e, type: "error" })
 		} finally {
 			syncing.value = false
 		}
@@ -847,20 +778,6 @@
 				</template>
 			</div>
 		</div>
-
-		<!-- 全局 Dialog -->
-		<Dialog
-			:visible="dialogVisible"
-			:title="dialogOptions.title"
-			:message="dialogOptions.message"
-			:type="dialogOptions.type"
-			:show-cancel="dialogOptions.showCancel"
-			:confirm-text="dialogOptions.confirmText"
-			:cancel-text="dialogOptions.cancelText"
-			@close="handleDialogCancel"
-			@confirm="handleDialogConfirm"
-			@cancel="handleDialogCancel"
-		/>
 	</Teleport>
 </template>
 

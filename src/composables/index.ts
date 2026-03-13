@@ -10,3 +10,5 @@ export { useLive2D } from "./useLive2D"
 
 export { useChat } from "./useChat"
 export type { ChatMessage } from "./useChat"
+
+export { useGlobalDialog } from "./useGlobalDialog"
