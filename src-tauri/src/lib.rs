@@ -1,6 +1,7 @@
 mod command_runner;
 mod commands;
 mod config;
+mod mcp;
 mod state;
 mod tray;
 mod window;
@@ -34,6 +35,15 @@ pub fn run() {
             // Soul (结构化数据)
             commands::save_soul,
             commands::load_soul_from_file,
+            // MCP
+            commands::start_mcp_server,
+            commands::start_mcp_server_with_config,
+            commands::stop_mcp_server,
+            commands::get_mcp_tools,
+            commands::get_mcp_status,
+            commands::get_mcp_config,
+            commands::handle_mcp_request,
+            commands::is_mcp_server_running,
         ])
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");

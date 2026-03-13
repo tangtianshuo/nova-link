@@ -5,6 +5,8 @@
 	import { useSettings, type AppSettings } from "../composables"
 	const props = defineProps<{
 		visible: boolean
+		wsStatus?: string
+		mcpStatus?: boolean
 	}>()
 
 	const emit = defineEmits<{
@@ -147,6 +149,80 @@
 			console.error("Failed to load data:", e)
 		} finally {
 			loading.value = false
+		}
+	}
+
+	// ============ MCP 配置 ============
+
+	// MCP 配置数据
+	const mcpConfig = ref<{
+		http: { url: string; host: string; port: number }
+		stdio: { command: string; args: string[] }
+		usage: string
+	} | null>(null)
+
+	// 加载 MCP 配置
+	async function loadMcpConfig() {
+		try {
+			const config: any = await invoke("get_mcp_config")
+			// 构建完整配置
+			mcpConfig.value = {
+				http: config.http,
+				stdio: {
+					command: "path-to-nova-link",
+					args: ["--mcp-stdio"],
+				},
+				usage: `## Nova Link MCP 使用指南
+
+### 方式一：HTTP 模式（推荐，本地）
+\`\`\`json
+{
+  "mcpServers": {
+    "nova-link": {
+      "command": "npx",
+      "args": ["@anthropic/mcp-client", "--url", "${config.http.url}"]
+    }
+  }
+}
+\`\`\`
+
+### 方式二：HTTP 模式（远程，需要 Nova Link 开启远程访问）
+使用 Nova Link 所在电脑的局域网 IP 地址。
+
+### 方式三：直接调用 Tauri 命令
+在 OpenClaw 系统提示词中直接调用：
+- play_animation - 播放动画
+- set_emotion - 设置情感
+- get_model_info - 获取模型信息
+
+### 可用动画/情感
+- idle, greeting, talking, listening, thinking
+- happy, sad, surprised, angry, sleeping`,
+			}
+		} catch (e) {
+			console.error("Failed to load MCP config:", e)
+		}
+	}
+
+	async function copyMcpConfig() {
+		if (!mcpConfig.value) {
+			await loadMcpConfig()
+		}
+		try {
+			const config: any = await invoke("get_mcp_config")
+			const mcpConfigJson = {
+				mcpServers: {
+					"nova-link": {
+						command: "npx",
+						args: ["@anthropic-ai/mcp-client", "--url", config.http.url],
+					},
+				},
+			}
+			await navigator.clipboard.writeText(JSON.stringify(mcpConfigJson, null, 2))
+			gShowDialog({ message: "MCP HTTP 配置已复制到剪贴板", type: "success" })
+		} catch (e) {
+			console.error("Failed to copy MCP config:", e)
+			gShowDialog({ message: "复制失败：" + e, type: "error" })
 		}
 	}
 
@@ -328,6 +404,7 @@
 		(visible) => {
 			if (visible) {
 				loadAllData()
+				loadMcpConfig()
 			}
 		},
 	)
@@ -335,6 +412,7 @@
 	onMounted(() => {
 		if (props.visible) {
 			loadAllData()
+			loadMcpConfig()
 		}
 		// 监听窗口大小变化
 		window.addEventListener("resize", updateParentWindowSize)
@@ -612,6 +690,33 @@
 									>▼</span
 								>
 							</div>
+
+							<!-- 服务状态面板 -->
+							<div class="status-panel">
+								<h4>服务状态</h4>
+								<div class="status-grid">
+									<div class="status-item">
+										<span
+											class="status-dot"
+											:class="wsStatus === 'connected' ? 'online' : wsStatus === 'connecting' ? 'connecting' : 'offline'"
+										></span>
+										<span class="status-label">WebSocket</span>
+										<span class="status-value">{{ wsStatus === 'connected' ? '已连接' : wsStatus === 'connecting' ? '连接中' : '未连接' }}</span>
+									</div>
+									<div class="status-item">
+										<span
+											class="status-dot"
+											:class="mcpStatus ? 'online' : 'offline'"
+										></span>
+										<span class="status-label">MCP Server</span>
+										<span class="status-value">{{ mcpStatus ? '运行中' : '未运行' }}</span>
+									</div>
+								</div>
+								<button class="btn-mcp-copy" @click="copyMcpConfig">
+									复制 MCP 配置
+								</button>
+							</div>
+
 							<div
 								class="accordion-content"
 								:class="{ active: isSectionActive('app') }"
@@ -1366,5 +1471,92 @@
 
 	.accordion::-webkit-scrollbar-thumb:hover {
 		background: rgba(255, 255, 255, 0.2);
+	}
+
+	/* 服务状态面板 */
+	.status-panel {
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: 12px;
+		padding: 16px;
+		margin: 12px 16px;
+	}
+
+	.status-panel h4 {
+		margin: 0 0 12px;
+		font-size: 14px;
+		color: #94a3b8;
+		font-weight: 500;
+	}
+
+	.status-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.status-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.status-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+
+	.status-dot.online {
+		background: #22c55e;
+		box-shadow: 0 0 6px #22c55e;
+	}
+
+	.status-dot.connecting {
+		background: #eab308;
+		animation: pulse 1s infinite;
+	}
+
+	.status-dot.offline {
+		background: #6b7280;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
+	}
+
+	.status-label {
+		font-size: 12px;
+		color: #94a3b8;
+	}
+
+	.status-value {
+		font-size: 12px;
+		color: #f1f5f9;
+		margin-left: auto;
+	}
+
+	.btn-mcp-copy {
+		width: 100%;
+		padding: 10px 16px;
+		background: rgba(59, 130, 246, 0.2);
+		border: 1px solid rgba(59, 130, 246, 0.3);
+		border-radius: 8px;
+		color: #60a5fa;
+		font-size: 13px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-mcp-copy:hover {
+		background: rgba(59, 130, 246, 0.3);
+		border-color: rgba(59, 130, 246, 0.5);
 	}
 </style>

@@ -1,13 +1,13 @@
 // 情绪解析工具模块
 // 用于从大模型回复中提取情绪标签
 
-import type { EmotionData } from '../sdk/types'
+import type { EmotionData } from "../sdk/types"
 
 // 情绪标签正则表达式
 const EMOTION_REGEX = /\[:emotion:(\w+):(\d+):\]/g
 
 // 支持的情绪类型
-export type EmotionType = 'happy' | 'sad' | 'surprised' | 'angry' | 'idle'
+export type EmotionType = "happy" | "sad" | "surprised" | "angry" | "idle"
 
 // 默认持续时间（毫秒）
 const DEFAULT_DURATIONS: Record<EmotionType, number> = {
@@ -15,14 +15,14 @@ const DEFAULT_DURATIONS: Record<EmotionType, number> = {
 	sad: 3000,
 	surprised: 1500,
 	angry: 3000,
-	idle: 0
+	idle: 0,
 }
 
 /**
  * 验证情绪类型是否有效
  */
 function isValidEmotionType(type: string): type is EmotionType {
-	return ['happy', 'sad', 'surprised', 'angry', 'idle'].includes(type)
+	return ["happy", "sad", "surprised", "angry", "idle"].includes(type)
 }
 
 /**
@@ -31,7 +31,7 @@ function isValidEmotionType(type: string): type is EmotionType {
 function cleanContent(text: string): string {
 	let cleaned = text
 	// 移除多余的空白
-	cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+	cleaned = cleaned.replace(/\n{3,}/g, "\n\n")
 	cleaned = cleaned.trim()
 	return cleaned
 }
@@ -52,11 +52,11 @@ export function extractEmotion(text: string): {
 
 		if (isValidEmotionType(emotionType)) {
 			return {
-				content: cleanContent(text.replace(EMOTION_REGEX, '')),
+				content: cleanContent(text.replace(EMOTION_REGEX, "")),
 				emotion: {
 					type: emotionType,
-					duration: duration || DEFAULT_DURATIONS[emotionType]
-				}
+					duration: duration || DEFAULT_DURATIONS[emotionType],
+				},
 			}
 		}
 	}
@@ -80,11 +80,11 @@ export function parseStreamEmotion(chunk: string): {
 
 		if (isValidEmotionType(emotionType)) {
 			return {
-				text: cleanContent(chunk.replace(EMOTION_REGEX, '')),
+				text: cleanContent(chunk.replace(EMOTION_REGEX, "")),
 				emotion: {
 					type: emotionType,
-					duration: duration || DEFAULT_DURATIONS[emotionType]
-				}
+					duration: duration || DEFAULT_DURATIONS[emotionType],
+				},
 			}
 		}
 	}

@@ -178,6 +178,7 @@
 	const showContextMenu = ref(false)
 	const contextMenuX = ref(0)
 	const contextMenuY = ref(0)
+	const mcpStatus = ref(true)
 
 	function hexToRgb(hex: string): string {
 		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -435,7 +436,9 @@
 
 	async function handleResetWindowSize() {
 		// 从后端获取基于屏幕尺寸的默认窗口大小
-		const defaultSize = await invoke<{ width: number; height: number }>("set_default_window_size")
+		const defaultSize = await invoke<{ width: number; height: number }>(
+			"set_default_window_size",
+		)
 		console.log("[App] Reset window size to:", defaultSize)
 		showContextMenu.value = false
 	}
@@ -480,6 +483,9 @@
 	// 监听聊天面板打开，加载历史记录
 	watch(isChatVisible, async (show) => {
 		if (show && isConnected()) {
+			// 先清除 "正在思考..." 消息
+			stopStreaming()
+
 			try {
 				const result = await loadHistory(20)
 				if (result && result.messages) {
@@ -536,13 +542,42 @@
 			console.log("[App] Error checking window state:", e)
 		}
 
-		init()
+		// 监听 MCP 事件 (不阻塞初始化)
+		listen<{ animation: string; duration: number }>(
+			"mcp-animation",
+			(event) => {
+				console.log("[App] MCP animation event:", event.payload)
+				const { animation, duration } = event.payload
+				handleEmotion({ type: animation, duration })
+			},
+		)
+
+		listen<{ emotion: string }>("mcp-emotion", (event) => {
+			console.log("[App] MCP emotion event:", event.payload)
+			const { emotion } = event.payload
+			handleEmotion({ type: emotion, duration: 3000 })
+		})
+
+		listen<{ state: string }>("mcp-state", (event) => {
+			console.log("[App] MCP state event:", event.payload)
+			const { state } = event.payload
+			previewState(state)
+		})
+
+		console.log("[App] Calling init()...")
+
+		init().catch((e) => {
+			console.error("[App] init() failed:", e)
+		})
 	})
 </script>
 
 <template>
 	<div id="app">
-		<TitleBar :ws-status="wsStatus" @close="handleAppClose" />
+		<TitleBar
+			:ws-status="wsStatus"
+			@close="handleAppClose"
+		/>
 		<Live2DContainer
 			:has-model="hasModel"
 			@click="handleLive2DClick"
@@ -556,6 +591,8 @@
 		/>
 		<CharacterSettingsModal
 			:visible="showSettings"
+			:ws-status="wsStatus"
+			:mcp-status="mcpStatus"
 			@close="closeSettings"
 			@save="handleSettingsSave"
 		/>

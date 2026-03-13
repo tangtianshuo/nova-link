@@ -60,8 +60,12 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       },
       onMessage: (message) => {
         console.log("[useWebSocket] Gateway message received:", message)
+
+        // 过滤掉 content 中 type 为 thinking 的内容
+        const filteredContent = message.content?.filter((c: any) => c.type !== "thinking") || []
+
         // 提取消息内容中的情绪
-        const content = message.content?.[0]?.text || ''
+        const content = filteredContent?.[0]?.text || ''
         const { content: cleanContent, emotion } = extractEmotion(content)
 
         // 如果包含情绪，触发情绪回调
