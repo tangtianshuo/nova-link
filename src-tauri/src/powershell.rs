@@ -1,4 +1,3 @@
-use log::info;
 use std::process::Command;
 
 /// 执行后台 PowerShell 脚本的工具类
@@ -14,8 +13,6 @@ impl PowerShellRunner {
     /// * `Ok(())` - 进程已成功启动
     /// * `Err(String)` - 启动失败
     pub fn run_background(command: &str) -> Result<(), String> {
-        info!("Starting background PowerShell command: {}", command);
-
         // 使用 PowerShell 的 -NoProfile -NonInteractive 标志
         // 使用 -WindowStyle Hidden 隐藏窗口
         // 使用 Start-Process 在后台运行
@@ -36,10 +33,7 @@ impl PowerShellRunner {
             .spawn();
 
         match child {
-            Ok(_process) => {
-                info!("Background PowerShell command started successfully");
-                Ok(())
-            }
+            Ok(_process) => Ok(()),
             Err(e) => {
                 let error_msg = format!("Failed to start PowerShell: {}", e);
                 log::error!("{}", error_msg);

@@ -29,7 +29,6 @@
 	async function syncSoulToOpenclaw() {
 		// 先保存当前内容
 		if (!soulContent.value) {
-			console.warn("Soul content is empty")
 			return
 		}
 
@@ -52,7 +51,6 @@
 				}
 			})
 			alert(`人格已同步到：\n${path}`)
-			console.log("Soul synced to OpenClaw:", path)
 		} catch (e) {
 			console.error("Failed to sync soul:", e)
 			alert("同步失败：" + e)
@@ -93,7 +91,6 @@
 					content: soulContent.value,
 				}
 			})
-			console.log("Soul saved successfully")
 		} catch (e) {
 			console.error("Failed to save soul:", e)
 		} finally {

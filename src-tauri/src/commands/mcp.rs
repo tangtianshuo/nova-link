@@ -35,8 +35,6 @@ pub async fn start_mcp_server_with_config(
     app: AppHandle,
     config: McpConfig,
 ) -> Result<String, String> {
-    log::info!("Starting MCP Server with config: {:?}", config);
-
     let server = McpServer::new();
 
     // Create channel for sending events to frontend
@@ -57,7 +55,6 @@ pub async fn start_mcp_server_with_config(
                             "duration": duration
                         }),
                     );
-                    log::info!("MCP Event: play animation {} for {}ms", name, duration);
                 }
                 McpEvent::Emotion { emotion } => {
                     let _ = app_handle.emit(
@@ -66,7 +63,6 @@ pub async fn start_mcp_server_with_config(
                             "emotion": emotion
                         }),
                     );
-                    log::info!("MCP Event: set emotion {}", emotion);
                 }
                 McpEvent::StateChange { state } => {
                     let _ = app_handle.emit(
@@ -75,7 +71,6 @@ pub async fn start_mcp_server_with_config(
                             "state": state
                         }),
                     );
-                    log::info!("MCP Event: state change {}", state);
                 }
             }
         }
@@ -112,15 +107,12 @@ pub async fn start_mcp_server_with_config(
         *http_lock = Some(http_server);
     }
 
-    log::info!("MCP Server started successfully in {} mode", mode);
     Ok(format!("MCP Server started in {} mode", mode))
 }
 
 /// Stop MCP Server
 #[tauri::command]
 pub async fn stop_mcp_server() -> Result<String, String> {
-    log::info!("Stopping MCP Server...");
-
     // Stop HTTP server
     {
         let mut http_lock = MCP_HTTP_SERVER.lock().await;
@@ -136,7 +128,6 @@ pub async fn stop_mcp_server() -> Result<String, String> {
         *server_lock = None;
     }
 
-    log::info!("MCP Server stopped");
     Ok("MCP Server stopped".to_string())
 }
 

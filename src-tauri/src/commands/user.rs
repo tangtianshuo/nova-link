@@ -105,7 +105,6 @@ _Learn about the person you're helping. Update this as you go._
     );
 
     std::fs::write(&user_path, content).map_err(|e| e.to_string())?;
-    log::info!("User saved to OpenClaw: {:?}", user_path);
     Ok(user_path.to_string_lossy().to_string())
 }
 

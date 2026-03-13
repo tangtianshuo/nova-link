@@ -77,8 +77,6 @@ export class AnimationStateMachine {
 
     this.clearTimers()
 
-    console.log(`[AnimationState] State transition: ${oldState} -> ${newState}`)
-
     this.callbacks.forEach(cb => cb({ oldState, newState }))
 
     this.playStateMotion(newState)
@@ -128,7 +126,6 @@ export class AnimationStateMachine {
 
   async playMotion(motionGroup: string): Promise<void> {
     if (!this.model) {
-      console.warn('[AnimationState] Model not available')
       return
     }
 
@@ -140,7 +137,7 @@ export class AnimationStateMachine {
         await manager.startMotion(motionGroup)
       }
     } catch (error) {
-      console.warn(`[AnimationState] Failed to play motion ${motionGroup}:`, error)
+      console.error(`[AnimationState] Failed to play motion ${motionGroup}:`, error)
     }
   }
 

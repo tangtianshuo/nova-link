@@ -76,7 +76,6 @@ fn save_identity_to_file_internal(identity: &Identity) -> Result<String, String>
     );
 
     std::fs::write(&identity_path, content).map_err(|e| e.to_string())?;
-    log::info!("Identity saved to OpenClaw: {:?}", identity_path);
     Ok(identity_path.to_string_lossy().to_string())
 }
 

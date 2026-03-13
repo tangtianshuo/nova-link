@@ -39,10 +39,9 @@ export class MouseInteractionHandler {
           name: area.Name || area.name || 'Unknown',
           id: area.Id || area.id || 'Unknown',
         }))
-        console.log('[MouseInteraction] HitAreas loaded:', this.hitAreas)
       }
     } catch (e) {
-      console.warn('[MouseInteraction] Failed to load HitAreas:', e)
+      console.error('[MouseInteraction] Failed to load HitAreas:', e)
     }
 
     if (this.hitAreas.length === 0) {
@@ -198,7 +197,7 @@ export class MouseInteractionHandler {
         }
       }
     } catch (e) {
-      console.warn('[MouseInteraction] Failed to trigger hover motion:', e)
+      console.error('[MouseInteraction] Failed to trigger hover motion:', e)
     }
   }
 
@@ -231,7 +230,7 @@ export class MouseInteractionHandler {
         if (eyeYParam) eyeYParam.value = this.mouseY * 0.5
       }
     } catch (e) {
-      console.warn('[MouseInteraction] Failed to update tracking:', e)
+      console.error('[MouseInteraction] Failed to update tracking:', e)
     }
   }
 
@@ -256,7 +255,7 @@ export class MouseInteractionHandler {
         if (eyeYParam) eyeYParam.value = 0
       }
     } catch (e) {
-      console.warn('[MouseInteraction] Failed to reset tracking:', e)
+      console.error('[MouseInteraction] Failed to reset tracking:', e)
     }
   }
 

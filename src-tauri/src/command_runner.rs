@@ -1,4 +1,3 @@
-use log::info;
 use std::process::Command;
 
 /// 跨平台命令执行器
@@ -14,8 +13,6 @@ impl CommandRunner {
     /// * `Ok(())` - 进程已成功启动
     /// * `Err(String)` - 启动失败
     pub fn run_background(command: &str) -> Result<(), String> {
-        info!("Starting background command: {}", command);
-
         #[cfg(target_os = "windows")]
         {
             // Windows: 使用 PowerShell 启动
@@ -36,10 +33,7 @@ impl CommandRunner {
                 .spawn();
 
             match child {
-                Ok(_process) => {
-                    info!("Background command started successfully");
-                    Ok(())
-                }
+                Ok(_process) => Ok(()),
                 Err(e) => {
                     let error_msg = format!("Failed to start command: {}", e);
                     log::error!("{}", error_msg);
@@ -57,10 +51,7 @@ impl CommandRunner {
                 .spawn();
 
             match child {
-                Ok(_process) => {
-                    info!("Background command started successfully");
-                    Ok(())
-                }
+                Ok(_process) => Ok(()),
                 Err(e) => {
                     // 如果 open 失败，尝试直接执行
                     let child2 = Command::new("sh")
@@ -68,10 +59,7 @@ impl CommandRunner {
                         .spawn();
 
                     match child2 {
-                        Ok(_) => {
-                            info!("Background command started via sh");
-                            Ok(())
-                        }
+                        Ok(_) => Ok(()),
                         Err(e2) => {
                             let error_msg = format!("Failed to start command: {} and fallback failed: {}", e, e2);
                             log::error!("{}", error_msg);
@@ -90,10 +78,7 @@ impl CommandRunner {
                 .spawn();
 
             match child {
-                Ok(_process) => {
-                    info!("Background command started successfully");
-                    Ok(())
-                }
+                Ok(_process) => Ok(()),
                 Err(e) => {
                     let error_msg = format!("Failed to start command: {}", e);
                     log::error!("{}", error_msg);

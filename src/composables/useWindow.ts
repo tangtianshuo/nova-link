@@ -35,22 +35,14 @@ export function useWindow() {
   }
 
   async function restoreWindowBounds(): Promise<void> {
-    console.log("[useWindow] restoreWindowBounds called, settings:", {
-      windowX: settings.value.windowX,
-      windowY: settings.value.windowY,
-      windowWidth: settings.value.windowWidth,
-      windowHeight: settings.value.windowHeight,
-    })
     try {
       const win = await getCurrentWindow()
       if (settings.value.windowWidth && settings.value.windowHeight) {
-        console.log("[useWindow] Setting size:", settings.value.windowWidth, settings.value.windowHeight)
         await win.setSize(
           new LogicalSize(settings.value.windowWidth, settings.value.windowHeight),
         )
       }
       if (settings.value.windowX !== undefined && settings.value.windowY !== undefined) {
-        console.log("[useWindow] Setting position:", settings.value.windowX, settings.value.windowY)
         await win.setPosition(new LogicalPosition(settings.value.windowX, settings.value.windowY))
       }
     } catch (e) {

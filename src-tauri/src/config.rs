@@ -29,19 +29,19 @@ fn init_tera() -> Tera {
     // 注册 identity 模板
     tera.add_raw_template("identity", include_str!("../templates/identity.md"))
         .unwrap_or_else(|e| {
-            log::warn!("Failed to register identity template: {}", e);
+            log::error!("Failed to register identity template: {}", e);
         });
 
     // 注册 user 模板
     tera.add_raw_template("user", include_str!("../templates/user.md"))
         .unwrap_or_else(|e| {
-            log::warn!("Failed to register user template: {}", e);
+            log::error!("Failed to register user template: {}", e);
         });
 
     // 注册 soul 模板
     tera.add_raw_template("soul", include_str!("../templates/soul.md"))
         .unwrap_or_else(|e| {
-            log::warn!("Failed to register soul template: {}", e);
+            log::error!("Failed to register soul template: {}", e);
         });
 
     tera
@@ -107,7 +107,6 @@ pub fn save_settings(settings: &AppSettings) -> Result<(), String> {
     let config_path = config_dir.join("config.json");
     let json = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
     fs::write(&config_path, json).map_err(|e| e.to_string())?;
-    log::info!("Settings saved to: {:?}", config_path);
     Ok(())
 }
 
@@ -170,7 +169,6 @@ pub fn save_identity(identity: &Identity) -> Result<(), String> {
     let md_path = config_dir.join("identity.md");
     fs::write(&md_path, identity.to_markdown()).map_err(|e| e.to_string())?;
 
-    log::info!("Identity saved to: {:?}", config_path);
     Ok(())
 }
 
@@ -239,7 +237,6 @@ pub fn save_user(user: &User) -> Result<(), String> {
     let md_path = config_dir.join("user.md");
     fs::write(&md_path, user.to_markdown()).map_err(|e| e.to_string())?;
 
-    log::info!("User saved to: {:?}", config_path);
     Ok(())
 }
 
@@ -308,7 +305,6 @@ pub fn save_soul(soul: &Soul) -> Result<(), String> {
     let md_path = config_dir.join("soul.md");
     fs::write(&md_path, soul.to_markdown()).map_err(|e| e.to_string())?;
 
-    log::info!("Soul saved to: {:?}", config_path);
     Ok(())
 }
 
@@ -357,7 +353,6 @@ pub fn save_window_state(x: i32, y: i32, width: u32, height: u32) -> Result<(), 
     let json = serde_json::to_string_pretty(&state).map_err(|e| e.to_string())?;
     let config_path = config_dir.join("window.json");
     fs::write(&config_path, json).map_err(|e| e.to_string())?;
-    log::info!("Window state saved to: {:?}", config_path);
     Ok(())
 }
 

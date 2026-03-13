@@ -199,12 +199,6 @@ async fn handle_animation_api(
         }
     }
 
-    log::info!(
-        "Animation API: emotion={}, duration={}ms",
-        emotion,
-        duration
-    );
-
     // Build MCP request
     let mcp_request = serde_json::json!({
         "jsonrpc": "2.0",

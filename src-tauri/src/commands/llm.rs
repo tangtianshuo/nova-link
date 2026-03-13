@@ -14,7 +14,6 @@ pub fn update_llm_config(
     config.api_key = api_key;
     config.api_url = api_url;
     config.model = model;
-    log::info!("LLM config updated");
 }
 
 #[tauri::command]

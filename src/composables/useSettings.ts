@@ -14,6 +14,10 @@ export interface AppSettings {
 	bgColor: string
 	bgOpacity: number
 	bgBlur: boolean
+	windowWidth?: number
+	windowHeight?: number
+	windowX?: number
+	windowY?: number
 }
 
 const DEFAULT_MODEL_PATH =

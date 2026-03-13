@@ -104,46 +104,28 @@
 		isConnected,
 		loadHistory,
 	} = useWebSocket({
-		onStatusChange: (status) => {
-			console.log("[App] WebSocket status changed:", status)
-		},
-		onConnected: (hello) => {
-			console.log("[App] WebSocket connected:", hello)
-		},
-		onDisconnected: () => {
-			console.log("[App] WebSocket disconnected")
-		},
+		onStatusChange: () => {},
+		onConnected: () => {},
+		onDisconnected: () => {},
 		onError: (error) => {
 			console.error("[App] WebSocket error:", error)
 		},
 		onMessageStart: () => {
-			console.log("[App] Message start")
 			startThinking()
 		},
 		onContentDelta: (payload: any) => {
-			console.log("[App] Content delta:", payload)
 			updateLastBotMessage(payload.delta.content || "")
 		},
 		onMessageStop: () => {
-			console.log("[App] Message stop")
 			stopStreaming()
 		},
 		onEmotion: (emotion) => {
-			console.log("[App] Emotion received:", emotion)
-			// 触发 Live2D 动画
 			handleEmotion(emotion)
 		},
 		onMessage: (message: any) => {
-			console.log("[App] ========== WebSocket message received ==========")
-			console.log("[App] Full message:", JSON.stringify(message, null, 2))
-			console.log("[App] Message role:", message.role)
-			console.log("[App] Message content:", message.content)
-			// 只处理 assistant（机器人）消息，不处理用户消息
 			if (message.role === "user") {
-				console.log("[App] Skipping user message")
 				return
 			}
-			// 处理消息内容
 			let content = ""
 			if (message.content) {
 				if (Array.isArray(message.content)) {
@@ -151,9 +133,7 @@
 				} else if (typeof message.content === "string") {
 					content = message.content
 				}
-				console.log("[App] Parsed content:", content)
 				if (content) {
-					console.log("[App] Adding bot message to chat")
 					addMessage("bot", content)
 				}
 			}
@@ -204,30 +184,18 @@
 	}
 
 	async function init() {
-		console.log("[App] init starting...")
 		await loadSettings()
-		console.log("[App] settings loaded:", settings.value)
 		applyBackground()
 
-		// 窗口位置由 Rust 后端设置，前端不再重复设置
-		// await restoreWindowBounds()
-
-		console.log("[App] initializing Live2D...")
 		await initLive2D()
-		console.log("[App] loading Live2D model...")
 		await loadLive2DModel(settings.value.modelPath)
 
-		// 自动连接 WebSocket
 		if (settings.value.wsUrl) {
-			console.log("[App] auto-connecting to Gateway:", settings.value.wsUrl)
 			connectWebSocket(settings.value.wsUrl, settings.value.wsToken)
 		}
 
-		console.log("[App] setting up listeners...")
 		await setupTauriListeners()
 		setupEventListeners()
-
-		console.log("Nova Link initialized")
 	}
 
 	async function setupTauriListeners() {
@@ -238,22 +206,15 @@
 
 		await listen("nova-link-message", (event) => {
 			const payload = event.payload as string
-			console.log("[nova-link-message]", payload)
 			handleIncomingMessage(payload)
 		})
 
-		// 监听窗口显示事件，从托盘恢复时重新加载 Live2D
 		await listen("window-shown", async () => {
-			console.log("[App] Window shown, checking Live2D...")
-			// 如果已经有模型，不需要重新加载
 			if (hasModel.value) {
-				console.log("[App] Model already loaded, skipping...")
 				return
 			}
-			// 等待 DOM 准备好
 			await nextTick()
 			setTimeout(async () => {
-				console.log("[App] Live2D not initialized, reinitializing...")
 				await initLive2D()
 				await loadLive2DModel(settings.value.modelPath)
 			}, 100)
@@ -311,7 +272,7 @@
 				try {
 					systemPrompt = await invoke<string>("load_soul")
 				} catch (e) {
-					console.warn("Failed to load soul:", e)
+					console.error("Failed to load soul:", e)
 				}
 
 				const response = await invoke<string>("chat_with_llm", {
@@ -435,11 +396,7 @@
 	}
 
 	async function handleResetWindowSize() {
-		// 从后端获取基于屏幕尺寸的默认窗口大小
-		const defaultSize = await invoke<{ width: number; height: number }>(
-			"set_default_window_size",
-		)
-		console.log("[App] Reset window size to:", defaultSize)
+		await invoke<{ width: number; height: number }>("set_default_window_size")
 		showContextMenu.value = false
 	}
 
@@ -460,9 +417,8 @@
 
 	async function handleRunGateway() {
 		try {
-			const { invoke } = await import("@tauri-apps/api/core")
-			const result = await invoke<string>("run_gateway")
-			console.log(result)
+			await import("@tauri-apps/api/core")
+			await invoke<string>("run_gateway")
 		} catch (e) {
 			console.error("启动 Gateway 失败:", e)
 		}
@@ -470,7 +426,6 @@
 	}
 
 	function handleReconnectWs() {
-		console.log("[App] manual reconnecting to Gateway...")
 		connectWebSocket(settings.value.wsUrl, settings.value.wsToken)
 		showContextMenu.value = false
 	}
@@ -528,43 +483,32 @@
 			}
 		}, 100)
 
-		// 尝试设置默认窗口大小（基于屏幕尺寸）
-		// 只有在没有保存的状态时才设置默认大小
 		try {
 			const hasState = await invoke<boolean>("has_window_state")
 			if (!hasState) {
 				await invoke("set_default_window_size")
-				console.log("[App] Default window size applied (first launch)")
-			} else {
-				console.log("[App] Using saved window state")
 			}
 		} catch (e) {
-			console.log("[App] Error checking window state:", e)
+			console.error("Error checking window state:", e)
 		}
 
-		// 监听 MCP 事件 (不阻塞初始化)
 		listen<{ animation: string; duration: number }>(
 			"mcp-animation",
 			(event) => {
-				console.log("[App] MCP animation event:", event.payload)
 				const { animation, duration } = event.payload
 				handleEmotion({ type: animation, duration })
 			},
 		)
 
 		listen<{ emotion: string }>("mcp-emotion", (event) => {
-			console.log("[App] MCP emotion event:", event.payload)
 			const { emotion } = event.payload
 			handleEmotion({ type: emotion, duration: 3000 })
 		})
 
 		listen<{ state: string }>("mcp-state", (event) => {
-			console.log("[App] MCP state event:", event.payload)
 			const { state } = event.payload
 			previewState(state)
 		})
-
-		console.log("[App] Calling init()...")
 
 		init().catch((e) => {
 			console.error("[App] init() failed:", e)

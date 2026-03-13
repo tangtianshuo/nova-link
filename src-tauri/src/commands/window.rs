@@ -20,7 +20,6 @@ pub async fn set_window_size(window: tauri::Window, width: u32, height: u32) -> 
         .set_size(tauri::Size::Physical(tauri::PhysicalSize::new(w, h)))
         .map_err(|e| e.to_string())?;
 
-    log::info!("Window size set to {}x{}", w, h);
     Ok(())
 }
 
@@ -57,11 +56,6 @@ pub async fn set_default_window_size(window: tauri::Window) -> Result<WindowSize
     window
         .set_size(tauri::Size::Physical(tauri::PhysicalSize::new(w, h)))
         .map_err(|e| e.to_string())?;
-
-    log::info!(
-        "Default window size set to {}x{} (1/6 screen width, height = width * 2)",
-        w, h
-    );
 
     Ok(WindowSize {
         width: w,

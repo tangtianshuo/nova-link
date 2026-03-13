@@ -173,7 +173,6 @@ fn save_soul_to_file_internal(content: &str) -> Result<String, String> {
     let soul_path = workspace_dir.join("SOUL.md");
 
     std::fs::write(&soul_path, content).map_err(|e| e.to_string())?;
-    log::info!("Soul saved to OpenClaw: {:?}", soul_path);
     Ok(soul_path.to_string_lossy().to_string())
 }
 

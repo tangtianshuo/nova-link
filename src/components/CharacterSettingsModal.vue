@@ -142,7 +142,6 @@
 			)
 			windowSize.width = currentSize.width
 			windowSize.height = currentSize.height
-			console.log("Loaded window size:", currentSize)
 			// 加载其他应用设置
 			Object.assign(localSettings, settings.value)
 		} catch (e) {
