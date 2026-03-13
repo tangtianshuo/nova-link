@@ -13,9 +13,16 @@ use tauri::Manager;
 pub fn run() {
     env_logger::init();
 
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .manage(AppState::default())
+    let mut builder = tauri::Builder::default().plugin(tauri_plugin_opener::init());
+
+    #[cfg(desktop)]
+    {
+        builder = builder
+            .plugin(tauri_plugin_process::init())
+            .plugin(tauri_plugin_updater::Builder::new().build());
+    }
+
+    builder.manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::chat_with_llm,
             commands::update_llm_config,

@@ -3,13 +3,13 @@ name: Build Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       platform:
-        description: 'Target platform'
+        description: "Target platform"
         required: true
-        default: 'all'
+        default: "all"
         type: choice
         options:
           - all
@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -41,7 +41,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install npm dependencies
         run: npm ci
@@ -59,9 +59,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Nova Link ${{ github.ref_name }}'
+          releaseName: "Nova Link ${{ github.ref_name }}"
           releaseBody: |
             ## Download
 
@@ -77,13 +79,20 @@ jobs:
             - **Universal**: Nova Link_x.x.x_universal.dmg
           releaseDraft: false
           prerelease: false
-          args: '--bundles msi'
+          args: "--bundles msi"
 
   build-macos:
     if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'macos') || github.event_name == 'push'
     permissions:
       contents: write
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target:
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -92,17 +101,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: 'x86_64-apple-darwin,aarch64-apple-darwin'
+          targets: "x86_64-apple-darwin,aarch64-apple-darwin"
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Install npm dependencies
         run: npm ci
@@ -116,19 +125,96 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vite-
 
-      # 优化：一次构建生成 universal dmg（包含 Intel + Apple Silicon）
-      - name: Build Universal macOS app
+      - name: Build macOS app (${{ matrix.target }})
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'Nova Link ${{ github.ref_name }} (macOS Universal)'
-          releaseBody: |
-            ### macOS Universal (x86_64 + aarch64)
-            Nova Link_x.x.x_universal.dmg
-
-            同时支持 Intel 和 Apple Silicon 芯片
+          releaseName: "Nova Link ${{ github.ref_name }}"
           releaseDraft: false
           prerelease: false
-          args: '--bundles dmg'
+          args: "--target ${{ matrix.target }} --bundles dmg"
+
+  publish-latest-json:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.platform == 'all')
+    needs: [build-windows, build-macos]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate latest.json from release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          api="https://api.github.com/repos/${REPO}/releases/tags/${TAG_NAME}"
+          release_json="$(curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "X-GitHub-Api-Version: 2022-11-28" "${api}")"
+
+          version="${TAG_NAME#v}"
+          pub_date="$(echo "${release_json}" | jq -r '.published_at // .created_at')"
+          body="$(echo "${release_json}" | jq -r '.body // ""')"
+
+          asset_url() {
+            local name="$1"
+            echo "${release_json}" | jq -r --arg n "${name}" '.assets[] | select(.name == $n) | .browser_download_url' | head -n 1
+          }
+
+          sig_content() {
+            local url="$1"
+            curl -sSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "${url}"
+          }
+
+          win_sig_name="$(echo "${release_json}" | jq -r '.assets[].name' | grep -E '\.msi\.sig$' | head -n 1 || true)"
+          win_sig_url=""
+          win_url=""
+          win_sig=""
+          if [ -n "${win_sig_name}" ]; then
+            win_sig_url="$(asset_url "${win_sig_name}")"
+            win_url="$(asset_url "${win_sig_name%.sig}")"
+            win_sig="$(sig_content "${win_sig_url}")"
+          fi
+
+          mac_sig_names="$(echo "${release_json}" | jq -r '.assets[].name' | grep -E '\.app\.tar\.gz\.sig$' || true)"
+          mac_x64_sig_name="$(echo "${mac_sig_names}" | grep -E '(x64|x86_64|intel)' | head -n 1 || true)"
+          mac_arm_sig_name="$(echo "${mac_sig_names}" | grep -E '(aarch64|arm64)' | head -n 1 || true)"
+
+          mac_x64_url=""
+          mac_x64_sig=""
+          if [ -n "${mac_x64_sig_name}" ]; then
+            mac_x64_sig_url="$(asset_url "${mac_x64_sig_name}")"
+            mac_x64_url="$(asset_url "${mac_x64_sig_name%.sig}")"
+            mac_x64_sig="$(sig_content "${mac_x64_sig_url}")"
+          fi
+
+          mac_arm_url=""
+          mac_arm_sig=""
+          if [ -n "${mac_arm_sig_name}" ]; then
+            mac_arm_sig_url="$(asset_url "${mac_arm_sig_name}")"
+            mac_arm_url="$(asset_url "${mac_arm_sig_name%.sig}")"
+            mac_arm_sig="$(sig_content "${mac_arm_sig_url}")"
+          fi
+
+          platforms='{}'
+          if [ -n "${win_url}" ] && [ -n "${win_sig}" ]; then
+            platforms="$(echo "${platforms}" | jq --arg url "${win_url}" --arg sig "${win_sig}" '. + {"windows-x86_64": {"url": $url, "signature": $sig}}')"
+          fi
+          if [ -n "${mac_x64_url}" ] && [ -n "${mac_x64_sig}" ]; then
+            platforms="$(echo "${platforms}" | jq --arg url "${mac_x64_url}" --arg sig "${mac_x64_sig}" '. + {"darwin-x86_64": {"url": $url, "signature": $sig}}')"
+          fi
+          if [ -n "${mac_arm_url}" ] && [ -n "${mac_arm_sig}" ]; then
+            platforms="$(echo "${platforms}" | jq --arg url "${mac_arm_url}" --arg sig "${mac_arm_sig}" '. + {"darwin-aarch64": {"url": $url, "signature": $sig}}')"
+          fi
+
+          echo '{}' \
+            | jq --arg v "${version}" --arg d "${pub_date}" --arg b "${body}" --argjson p "${platforms}" \
+              '{version: $v, pub_date: $d, notes: $b, platforms: $p}' \
+            > latest.json
+
+          gh release upload "${TAG_NAME}" latest.json --clobber

@@ -217,7 +217,9 @@
 					},
 				},
 			}
-			await navigator.clipboard.writeText(JSON.stringify(mcpConfigJson, null, 2))
+			await navigator.clipboard.writeText(
+				JSON.stringify(mcpConfigJson, null, 2),
+			)
 			gShowDialog({ message: "MCP HTTP 配置已复制到剪贴板", type: "success" })
 		} catch (e) {
 			console.error("Failed to copy MCP config:", e)
@@ -281,7 +283,7 @@
 					emoticons: soul.emoticons,
 					tone: soul.tone,
 					content: soul.content,
-				}
+				},
 			})
 			if (soulResult.openclaw_warning) {
 				saveWarnings.value.push(soulResult.openclaw_warning)
@@ -338,7 +340,8 @@
 
 	async function syncToOpenClaw() {
 		const confirmed = await gShowConfirm({
-			message: "确定要重新同步到 OpenClaw 工作目录吗？\n\n这将覆盖 ~/.openclaw/workspace/ 下的 Soul 设置文件。",
+			message:
+				"确定要重新同步到 OpenClaw 工作目录吗？\n\n这将覆盖 ~/.openclaw/workspace/ 下的 Soul 设置文件。",
 			title: "确认同步",
 		})
 		if (!confirmed) return
@@ -354,7 +357,7 @@
 					emoticons: soul.emoticons,
 					tone: soul.tone,
 					content: soul.content,
-				}
+				},
 			})
 
 			if (result.openclaw_warning) {
@@ -368,17 +371,6 @@
 		} finally {
 			syncing.value = false
 		}
-	}
-
-	// ============ Soul 编辑功能 ============
-
-	function enableSoulEdit() {
-		soulEditable.value = true
-	}
-
-	function cancelSoulEdit() {
-		Object.assign(soul, soulOriginal)
-		soulEditable.value = false
 	}
 
 	// ============ 手风琴控制 ============
@@ -697,10 +689,22 @@
 									<div class="status-item">
 										<span
 											class="status-dot"
-											:class="wsStatus === 'connected' ? 'online' : wsStatus === 'connecting' ? 'connecting' : 'offline'"
+											:class="
+												wsStatus === 'connected'
+													? 'online'
+													: wsStatus === 'connecting'
+														? 'connecting'
+														: 'offline'
+											"
 										></span>
 										<span class="status-label">WebSocket</span>
-										<span class="status-value">{{ wsStatus === 'connected' ? '已连接' : wsStatus === 'connecting' ? '连接中' : '未连接' }}</span>
+										<span class="status-value">{{
+											wsStatus === "connected"
+												? "已连接"
+												: wsStatus === "connecting"
+													? "连接中"
+													: "未连接"
+										}}</span>
 									</div>
 									<div class="status-item">
 										<span
@@ -708,10 +712,15 @@
 											:class="mcpStatus ? 'online' : 'offline'"
 										></span>
 										<span class="status-label">MCP Server</span>
-										<span class="status-value">{{ mcpStatus ? '运行中' : '未运行' }}</span>
+										<span class="status-value">{{
+											mcpStatus ? "运行中" : "未运行"
+										}}</span>
 									</div>
 								</div>
-								<button class="btn-mcp-copy" @click="copyMcpConfig">
+								<button
+									class="btn-mcp-copy"
+									@click="copyMcpConfig"
+								>
 									复制 MCP 配置
 								</button>
 							</div>

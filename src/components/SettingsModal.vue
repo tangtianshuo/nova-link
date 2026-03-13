@@ -40,7 +40,7 @@
 		soulSyncing.value = true
 		try {
 			// 保存 Soul（自动同步到 OpenClaw）
-			await invoke("save_soul", {
+			const result = await invoke<any>("save_soul", {
 				data: {
 					name: "Nova",
 					personality: "",
@@ -50,7 +50,11 @@
 					content: soulContent.value,
 				}
 			})
-			alert(`人格已同步到：\n${path}`)
+			if (result?.openclaw_warning) {
+				alert(result.openclaw_warning)
+			} else {
+				alert("已同步到 OpenClaw 工作目录")
+			}
 		} catch (e) {
 			console.error("Failed to sync soul:", e)
 			alert("同步失败：" + e)

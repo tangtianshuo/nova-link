@@ -12,6 +12,8 @@
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2",
+    "@tauri-apps/plugin-updater": "^2",
     "@vitejs/plugin-vue": "^6.0.4",
     "autoprefixer": "^10.4.27",
     "marked": "^17.0.4",

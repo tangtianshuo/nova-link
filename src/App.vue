@@ -17,6 +17,7 @@
 		ContextMenu,
 		Dialog,
 	} from "./components"
+	import { checkForUpdates } from "./utils/updater"
 
 	const { settings, loadSettings } = useSettings()
 
@@ -139,6 +140,10 @@
 			}
 		},
 	})
+
+	async function handleCheckUpdates() {
+		await checkForUpdates(true)
+	}
 	const {
 		messages,
 		isChatVisible,
@@ -196,6 +201,10 @@
 
 		await setupTauriListeners()
 		setupEventListeners()
+
+		setTimeout(() => {
+			checkForUpdates(false)
+		}, 8000)
 	}
 
 	async function setupTauriListeners() {
@@ -546,6 +555,7 @@
 			:y="contextMenuY"
 			@close="showContextMenu = false"
 			@settings="openSettings"
+			@check-updates="handleCheckUpdates"
 			@reload-model="handleReloadModel"
 			@toggle-always-on-top="handleToggleAlwaysOnTop"
 			@minimize="handleMinimize"

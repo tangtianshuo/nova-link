@@ -42,6 +42,7 @@ const menuStyle = computed(() => {
 const emit = defineEmits<{
   close: []
   settings: []
+  checkUpdates: []
   reloadModel: []
   toggleAlwaysOnTop: []
   minimize: []
@@ -89,6 +90,9 @@ function handleClick(item: string) {
   switch (item) {
     case "settings":
       emit("settings")
+      break
+    case "checkUpdates":
+      emit("checkUpdates")
       break
     case "reloadModel":
       emit("reloadModel")
@@ -192,6 +196,12 @@ onUnmounted(() => {
         @click="handleClick('settings')"
       >
         设置
+      </div>
+      <div
+        class="menu-item"
+        @click="handleClick('checkUpdates')"
+      >
+        检查更新
       </div>
       <div
         class="menu-item"
