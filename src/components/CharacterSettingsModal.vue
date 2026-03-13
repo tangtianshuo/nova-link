@@ -69,9 +69,16 @@
 	})
 
 	// Soul 设置
-	const soulContent = ref("")
+	const soul = reactive({
+		name: "",
+		personality: "",
+		style: "",
+		emoticons: "",
+		tone: "",
+		content: "",
+	})
 	const soulEditable = ref(false)
-	const soulOriginalContent = ref("")
+	const soulOriginal = reactive({ ...soul })
 
 	// 同步状态
 	const syncing = ref(false)
@@ -183,10 +190,17 @@
 				context: userData.context || "",
 			})
 
-			// 加载 Soul（从 OpenClaw 目录读取）
-			const soul = await invoke<string>("load_soul_from_file")
-			soulContent.value = soul
-			soulOriginalContent.value = soul
+			// 加载 Soul（从 OpenClaw 目录读取，结构化数据）
+			const soulData: any = await invoke("load_soul_from_file")
+			Object.assign(soul, {
+				name: soulData.name || "Nova",
+				personality: soulData.personality || "活泼、可爱、友好",
+				style: soulData.style || "轻松可爱",
+				emoticons: soulData.emoticons || "◕‿◕",
+				tone: soulData.tone || "简洁有趣",
+				content: soulData.content || "",
+			})
+			Object.assign(soulOriginal, soul)
 			soulEditable.value = false
 
 			// 从后端获取当前窗口尺寸
@@ -220,20 +234,27 @@
 		}, 300) // 300ms 防抖
 	}
 
+	// 保存结果的警告信息
+	const saveWarnings = ref<string[]>([])
+
 	async function doSave() {
 		saving.value = true
+		saveWarnings.value = []
 		try {
-			// 保存 Identity 到 SQLite
-			await invoke("save_identity", {
+			// 保存 Identity（同时保存到本地和 OpenClaw 目录）
+			const identityResult: any = await invoke("save_identity", {
 				name: identity.name,
 				creatureType: identity.creatureType,
 				temperament: identity.temperament,
 				emoji: identity.emoji,
 				avatarPath: identity.avatarPath,
 			})
+			if (identityResult.openclaw_warning) {
+				saveWarnings.value.push(identityResult.openclaw_warning)
+			}
 
-			// 保存 User 到文件
-			await invoke("save_user_to_file", {
+			// 保存 User（同时保存到本地和 OpenClaw 目录）
+			const userResult: any = await invoke("save_user", {
 				name: user.name,
 				callName: user.callName,
 				pronouns: user.pronouns,
@@ -241,14 +262,39 @@
 				notes: user.notes,
 				context: user.context,
 			})
+			if (userResult.openclaw_warning) {
+				saveWarnings.value.push(userResult.openclaw_warning)
+			}
 
-			// 保存 Soul（如果有修改）
-			if (soulEditable.value) {
-				await invoke("save_soul", { content: soulContent.value })
+			// 保存 Soul（同时保存到本地和 OpenClaw 目录）
+			const soulResult: any = await invoke("save_soul", {
+				data: {
+					name: soul.name,
+					personality: soul.personality,
+					style: soul.style,
+					emoticons: soul.emoticons,
+					tone: soul.tone,
+					content: soul.content,
+				}
+			})
+			if (soulResult.openclaw_warning) {
+				saveWarnings.value.push(soulResult.openclaw_warning)
 			}
 
 			// 保存应用设置到后端
-			Object.assign(settings.value, localSettings)
+			// 显式赋值确保类型正确（range input 返回字符串需要转为数字）
+			settings.value.bgOpacity = Number(localSettings.bgOpacity)
+			settings.value.bgColor = localSettings.bgColor
+			settings.value.bgBlur = localSettings.bgBlur
+			settings.value.modelPath = localSettings.modelPath
+			settings.value.wsUrl = localSettings.wsUrl
+			settings.value.wsToken = localSettings.wsToken
+			settings.value.chatProvider = localSettings.chatProvider
+			settings.value.alwaysOnTop = localSettings.alwaysOnTop
+			settings.value.llmProvider = localSettings.llmProvider
+			settings.value.llmApiKey = localSettings.llmApiKey
+			settings.value.llmApiUrl = localSettings.llmApiUrl
+			settings.value.llmModel = localSettings.llmModel
 			await saveSettings()
 			await updateLlmConfig()
 
@@ -257,6 +303,19 @@
 				width: Math.max(300, windowSize.width),
 				height: Math.max(400, windowSize.height),
 			})
+
+			// 如果有 OpenClaw 相关的警告，显示给用户
+			if (saveWarnings.value.length > 0) {
+				showDialog({
+					message:
+						"部分设置已保存到本地，但 OpenClaw 目录保存失败：\n\n" +
+						saveWarnings.value.join("\n\n"),
+					title: "保存结果",
+					type: "warning",
+					showCancel: false,
+					confirmText: "确定",
+				})
+			}
 
 			emit("save", localSettings)
 			emit("close")
@@ -269,23 +328,34 @@
 	}
 
 	// ============ 同步功能 ============
+	// 注意：由于保存时已自动同步，此功能现在用于手动触发同步
 
 	async function syncToOpenClaw() {
 		const confirmed = await showConfirm(
-			"确定要将灵魂设置同步到 OpenClaw 工作目录吗？\n\n这将覆盖 ~/.openclaw/workspace/ 下的 SOUL.md 文件。\n\n注意：身份和用户信息将通过对话进行设置。",
+			"确定要重新同步到 OpenClaw 工作目录吗？\n\n这将覆盖 ~/.openclaw/workspace/ 下的 Soul 设置文件。",
 			"确认同步",
 		)
 		if (!confirmed) return
 
 		syncing.value = true
 		try {
-			// 只同步 Soul 到 OpenClaw
-			const soulToSave = soulEditable.value
-				? soulContent.value
-				: soulOriginalContent.value
-			await invoke("save_soul_to_file", { content: soulToSave })
+			// 重新保存 Soul（自动同步到 OpenClaw）
+			const result: any = await invoke("save_soul", {
+				data: {
+					name: soul.name,
+					personality: soul.personality,
+					style: soul.style,
+					emoticons: soul.emoticons,
+					tone: soul.tone,
+					content: soul.content,
+				}
+			})
 
-			showDialog({ message: "已同步到 OpenClaw 工作目录", type: "success" })
+			if (result.openclaw_warning) {
+				showDialog({ message: result.openclaw_warning, type: "warning" })
+			} else {
+				showDialog({ message: "已同步到 OpenClaw 工作目录", type: "success" })
+			}
 		} catch (e) {
 			console.error("Sync failed:", e)
 			showDialog({ message: "同步失败：" + e, type: "error" })
@@ -301,7 +371,7 @@
 	}
 
 	function cancelSoulEdit() {
-		soulContent.value = soulOriginalContent.value
+		Object.assign(soul, soulOriginal)
 		soulEditable.value = false
 	}
 
@@ -537,40 +607,63 @@
 								class="accordion-content"
 								:class="{ active: isSectionActive('soul') }"
 							>
-								<!-- 只读/编辑模式切换 -->
-								<div class="soul-controls">
-									<button
-										v-if="!soulEditable"
-										class="edit-btn"
-										@click="enableSoulEdit"
-									>
-										编辑灵魂
-									</button>
-									<template v-else>
-										<button
-											class="cancel-btn"
-											@click="cancelSoulEdit"
-										>
-											取消
-										</button>
-										<span class="soul-hint">
-											情绪标签 [:emotion:xxx:] 已被隐藏
-										</span>
-									</template>
+								<p class="section-hint">
+									定义角色的性格、说话风格和情绪表达方式
+								</p>
+								<div class="form-grid">
+									<div class="form-group">
+										<label>名字</label>
+										<input
+											v-model="soul.name"
+											type="text"
+											placeholder="Nova"
+										/>
+									</div>
+									<div class="form-group">
+										<label>性格</label>
+										<input
+											v-model="soul.personality"
+											type="text"
+											placeholder="活泼、可爱、友好"
+										/>
+									</div>
+									<div class="form-group">
+										<label>说话风格</label>
+										<input
+											v-model="soul.style"
+											type="text"
+											placeholder="轻松可爱"
+										/>
+									</div>
+									<div class="form-group">
+										<label>颜文字</label>
+										<input
+											v-model="soul.emoticons"
+											type="text"
+											placeholder="◕‿◕"
+										/>
+									</div>
+									<div class="form-group">
+										<label>语气</label>
+										<input
+											v-model="soul.tone"
+											type="text"
+											placeholder="简洁有趣"
+										/>
+									</div>
 								</div>
-
-								<!-- Soul 编辑器 -->
-								<textarea
-									v-model="soulContent"
-									class="soul-textarea"
-									:readonly="!soulEditable"
-									:placeholder="
-										soulEditable
-											? '在此编辑灵魂设定...'
-											: '点击上方编辑按钮修改'
-									"
-									rows="20"
-								></textarea>
+								<div class="form-group full-width">
+									<label>系统指令</label>
+									<textarea
+										v-model="soul.content"
+										class="soul-textarea"
+										placeholder="在这里输入系统指令..."
+										rows="8"
+									></textarea>
+								</div>
+								<p class="section-hint">
+									情绪标签 [:emotion:xxx:] 会自动添加到回复中
+								</p>
 							</div>
 						</div>
 

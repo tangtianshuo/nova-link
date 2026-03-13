@@ -14,11 +14,6 @@ export interface AppSettings {
 	bgColor: string
 	bgOpacity: number
 	bgBlur: boolean
-	// 窗口位置和大小（由 Rust 后端管理）
-	windowX?: number
-	windowY?: number
-	windowWidth?: number
-	windowHeight?: number
 }
 
 const DEFAULT_MODEL_PATH =

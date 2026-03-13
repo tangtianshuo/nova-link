@@ -2,16 +2,16 @@
 
 _Learn about the person you're helping. Update this as you go._
 
-- **Name:** {{name}}
-- **What to call them:** {{call_name}}
-- **Pronouns:** {{pronouns}} _(optional)_
-- **Timezone:** {{timezone}}
-- **Notes:** {{notes}}
+- **Name:** {{ name }}
+- **What to call them:** {{ call_name }}
+- **Pronouns:** {{ pronouns }}
+- **Timezone:** {{ timezone }}
+- **Notes:** {{ notes }}
 
 ## Context
 
-{{context}}
+{{ context }}
 
 ---
 
-The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.)
+The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.

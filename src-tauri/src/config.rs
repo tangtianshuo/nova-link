@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use tera::{Context, Tera};
 
 /// 获取配置目录路径（exe 同级 config/ 目录）
 pub fn get_config_dir() -> PathBuf {
@@ -19,19 +20,46 @@ pub fn ensure_config_dir() -> Result<PathBuf, String> {
     Ok(config_dir)
 }
 
-// ============ 模板系统 ============
+// ============ 模板系统 (Tera) ============
 
-/// 渲染模板（简单的占位符替换）
-pub fn render_template(template: &str, vars: &[(&str, &str)]) -> String {
-    let mut result = template.to_string();
-    for (key, value) in vars {
-        let placeholder = format!("{{{}}}", key);
-        result = result.replace(&placeholder, value);
-    }
-    result
+/// 初始化 Tera 模板引擎
+fn init_tera() -> Tera {
+    let mut tera = Tera::default();
+
+    // 注册 identity 模板
+    tera.add_raw_template("identity", include_str!("../templates/identity.md"))
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to register identity template: {}", e);
+        });
+
+    // 注册 user 模板
+    tera.add_raw_template("user", include_str!("../templates/user.md"))
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to register user template: {}", e);
+        });
+
+    // 注册 soul 模板
+    tera.add_raw_template("soul", include_str!("../templates/soul.md"))
+        .unwrap_or_else(|e| {
+            log::warn!("Failed to register soul template: {}", e);
+        });
+
+    tera
 }
 
-/// 嵌入模板（使用 include_str! 宏）
+/// 使用 Tera 渲染模板
+fn render_tera(template_name: &str, vars: &serde_json::Value) -> String {
+    static TERA_ONCE: std::sync::OnceLock<Tera> = std::sync::OnceLock::new();
+    let tera = TERA_ONCE.get_or_init(init_tera);
+
+    let context = Context::from_value(vars.clone()).unwrap_or_default();
+    tera.render(template_name, &context).unwrap_or_else(|e| {
+        log::error!("Template render error: {}", e);
+        String::new()
+    })
+}
+
+/// 嵌入模板（使用 include_str! 宏）- 用于默认值
 pub const IDENTITY_TEMPLATE: &str = include_str!("../templates/identity.md");
 pub const USER_TEMPLATE: &str = include_str!("../templates/user.md");
 pub const SOUL_TEMPLATE: &str = include_str!("../templates/soul.md");
@@ -118,18 +146,16 @@ impl Default for Identity {
 }
 
 impl Identity {
-    /// 从 Identity 生成 Markdown
+    /// 从 Identity 生成 Markdown (使用 Tera)
     pub fn to_markdown(&self) -> String {
-        render_template(
-            IDENTITY_TEMPLATE,
-            &[
-                ("name", &self.name),
-                ("creature_type", &self.creature_type),
-                ("temperament", &self.temperament),
-                ("emoji", &self.emoji),
-                ("avatar_path", &self.avatar_path),
-            ],
-        )
+        let vars = serde_json::json!({
+            "name": self.name,
+            "creature_type": self.creature_type,
+            "temperament": self.temperament,
+            "emoji": self.emoji,
+            "avatar_path": self.avatar_path,
+        });
+        render_tera("identity", &vars)
     }
 }
 
@@ -187,18 +213,17 @@ impl Default for User {
 
 #[allow(dead_code)]
 impl User {
+    /// 从 User 生成 Markdown (使用 Tera)
     pub fn to_markdown(&self) -> String {
-        render_template(
-            USER_TEMPLATE,
-            &[
-                ("name", &self.name),
-                ("call_name", &self.call_name),
-                ("pronouns", &self.pronouns),
-                ("timezone", &self.timezone),
-                ("notes", &self.notes),
-                ("context", &self.context),
-            ],
-        )
+        let vars = serde_json::json!({
+            "name": self.name,
+            "call_name": self.call_name,
+            "pronouns": self.pronouns,
+            "timezone": self.timezone,
+            "notes": self.notes,
+            "context": self.context,
+        });
+        render_tera("user", &vars)
     }
 }
 
@@ -258,17 +283,16 @@ impl Default for Soul {
 
 #[allow(dead_code)]
 impl Soul {
+    /// 从 Soul 生成 Markdown (使用 Tera)
     pub fn to_markdown(&self) -> String {
-        render_template(
-            SOUL_TEMPLATE,
-            &[
-                ("name", &self.name),
-                ("personality", &self.personality),
-                ("style", &self.style),
-                ("emoticons", &self.emoticons),
-                ("tone", &self.tone),
-            ],
-        )
+        let vars = serde_json::json!({
+            "name": self.name,
+            "personality": self.personality,
+            "style": self.style,
+            "emoticons": self.emoticons,
+            "tone": self.tone,
+        });
+        render_tera("soul", &vars)
     }
 }
 

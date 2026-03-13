@@ -25,20 +25,15 @@ pub fn run() {
             commands::save_setting,
             commands::get_setting,
             commands::gateway::run_gateway,
-            commands::save_soul,
-            commands::load_soul,
-            commands::sync_soul_to_openclaw,
-            commands::load_identity,
+            // Identity
             commands::save_identity,
             commands::load_identity_from_file,
-            commands::save_identity_to_file,
-            commands::get_default_identity,
-            commands::get_default_user,
+            // User
+            commands::save_user,
             commands::load_user_from_file,
-            commands::save_user_to_file,
+            // Soul (结构化数据)
+            commands::save_soul,
             commands::load_soul_from_file,
-            commands::save_soul_to_file,
-            commands::sync_soul_from_local,
         ])
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");

@@ -1,12 +1,20 @@
 use crate::config::{self, Identity};
 
+/// 保存结果
+#[derive(Debug, serde::Serialize)]
+pub struct SaveResult {
+    pub local_ok: bool,
+    pub openclaw_ok: bool,
+    pub openclaw_warning: Option<String>,
+}
+
 /// 从配置文件加载 Identity
 #[tauri::command]
 pub fn load_identity() -> Result<Identity, String> {
     config::load_identity()
 }
 
-/// 保存 Identity 到配置文件
+/// 保存 Identity（同时保存到本地和 OpenClaw 目录）
 #[tauri::command]
 pub fn save_identity(
     name: String,
@@ -14,7 +22,7 @@ pub fn save_identity(
     temperament: String,
     emoji: String,
     avatar_path: String,
-) -> Result<(), String> {
+) -> Result<SaveResult, String> {
     let identity = Identity {
         name,
         creature_type,
@@ -22,80 +30,32 @@ pub fn save_identity(
         emoji,
         avatar_path,
     };
-    config::save_identity(&identity)
-}
 
-/// 从 OpenClaw 工作目录加载 IDENTITY.md
-#[tauri::command]
-pub fn load_identity_from_file() -> Result<Identity, String> {
-    let workspace_dir = get_openclaw_workspace_dir()?;
-    let identity_path = workspace_dir.join("IDENTITY.md");
+    // 先保存到本地
+    let local_ok = config::save_identity(&identity).is_ok();
 
-    if !identity_path.exists() {
-        // 文件不存在，返回空的 Identity
-        return Ok(Identity {
-            name: String::new(),
-            creature_type: String::new(),
-            temperament: String::new(),
-            emoji: String::new(),
-            avatar_path: String::new(),
-        });
-    }
-
-    let content = std::fs::read_to_string(&identity_path).map_err(|e| e.to_string())?;
-
-    // 解析 IDENTITY.md 文件
-    // 格式：键名：值
-    let mut identity = Identity {
-        name: String::new(),
-        creature_type: String::new(),
-        temperament: String::new(),
-        emoji: String::new(),
-        avatar_path: String::new(),
+    // 尝试保存到 OpenClaw 目录
+    let (openclaw_ok, openclaw_warning) = match save_identity_to_file_internal(&identity) {
+        Ok(_) => (true, None),
+        Err(e) => {
+            let warning = if local_ok {
+                format!("OpenClaw 目录保存失败，已降级保存到本地: {}", e)
+            } else {
+                format!("保存失败: {}", e)
+            };
+            (false, Some(warning))
+        }
     };
 
-    for line in content.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if let Some((key, value)) = line.split_once('：') {
-            let key = key.trim();
-            let value = value.trim();
-            match key {
-                "名称" => identity.name = value.to_string(),
-                "生物类型" => identity.creature_type = value.to_string(),
-                "气质" => identity.temperament = value.to_string(),
-                "表情符号" => identity.emoji = value.to_string(),
-                "头像" => identity.avatar_path = value.to_string(),
-                _ => {}
-            }
-        } else if let Some((key, value)) = line.split_once(':') {
-            let key = key.trim();
-            let value = value.trim();
-            match key {
-                "名称" | "Name" => identity.name = value.to_string(),
-                "生物类型" | "Creature Type" => identity.creature_type = value.to_string(),
-                "气质" | "Temperament" => identity.temperament = value.to_string(),
-                "表情符号" | "Emoji" => identity.emoji = value.to_string(),
-                "头像" | "Avatar" => identity.avatar_path = value.to_string(),
-                _ => {}
-            }
-        }
-    }
-
-    Ok(identity)
+    Ok(SaveResult {
+        local_ok,
+        openclaw_ok,
+        openclaw_warning,
+    })
 }
 
-/// 保存 Identity 到 OpenClaw 工作目录的 IDENTITY.md
-#[tauri::command]
-pub fn save_identity_to_file(
-    name: String,
-    creature_type: String,
-    temperament: String,
-    emoji: String,
-    avatar_path: String,
-) -> Result<String, String> {
+/// 内部函数：保存 Identity 到 OpenClaw 目录（不创建命令）
+fn save_identity_to_file_internal(identity: &Identity) -> Result<String, String> {
     let workspace_dir = get_openclaw_workspace_dir()?;
     let identity_path = workspace_dir.join("IDENTITY.md");
 
@@ -108,13 +68,43 @@ pub fn save_identity_to_file(
 - **专属emoji：** {}
 - **头像：** {}
 "#,
-        name, creature_type, temperament, emoji, avatar_path
+        identity.name,
+        identity.creature_type,
+        identity.temperament,
+        identity.emoji,
+        identity.avatar_path
     );
 
     std::fs::write(&identity_path, content).map_err(|e| e.to_string())?;
-
-    log::info!("Identity saved to: {:?}", identity_path);
+    log::info!("Identity saved to OpenClaw: {:?}", identity_path);
     Ok(identity_path.to_string_lossy().to_string())
+}
+
+/// 从本地配置加载 Identity 作为结构化数据
+#[tauri::command]
+pub fn load_identity_from_file() -> Result<Identity, String> {
+    // 从 identity.json 加载结构化数据
+    let identity = config::load_identity().unwrap_or_else(|_| Identity::default());
+    Ok(identity)
+}
+
+/// 保存 Identity 到 OpenClaw 工作目录的 IDENTITY.md（保留兼容）
+#[tauri::command]
+pub fn save_identity_to_file(
+    name: String,
+    creature_type: String,
+    temperament: String,
+    emoji: String,
+    avatar_path: String,
+) -> Result<String, String> {
+    let identity = Identity {
+        name,
+        creature_type,
+        temperament,
+        emoji,
+        avatar_path,
+    };
+    save_identity_to_file_internal(&identity)
 }
 
 /// 获取默认 Identity 模板

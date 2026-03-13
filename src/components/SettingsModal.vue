@@ -16,7 +16,7 @@
 	const { settings, saveSettings, updateLlmConfig } = useSettings()
 
 	const localSettings = reactive<AppSettings>({ ...settings.value })
-	const windowSize = reactive({ width: 400, height: 500 })
+	const windowSize = reactive({ width: 450, height: 900 })
 
 	// Soul 人格相关状态
 	const soulContent = ref("")
@@ -40,11 +40,16 @@
 
 		soulSyncing.value = true
 		try {
-			// 先保存当前编辑的内容
-			await invoke("save_soul", { content: soulContent.value })
-			// 然后同步到 OpenClaw 目录
-			const path = await invoke<string>("sync_soul_to_openclaw", {
-				content: soulContent.value,
+			// 保存 Soul（自动同步到 OpenClaw）
+			await invoke("save_soul", {
+				data: {
+					name: "Nova",
+					personality: "",
+					style: "",
+					emoticons: "",
+					tone: "",
+					content: soulContent.value,
+				}
 			})
 			alert(`人格已同步到：\n${path}`)
 			console.log("Soul synced to OpenClaw:", path)
@@ -78,7 +83,16 @@
 	async function saveSoul() {
 		soulSaving.value = true
 		try {
-			await invoke("save_soul", { content: soulContent.value })
+			await invoke("save_soul", {
+				data: {
+					name: "Nova",
+					personality: "",
+					style: "",
+					emoticons: "",
+					tone: "",
+					content: soulContent.value,
+				}
+			})
 			console.log("Soul saved successfully")
 		} catch (e) {
 			console.error("Failed to save soul:", e)
