@@ -87,7 +87,7 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            model_path: String::new(),
+            model_path: "/models/hiyori_pro_zh/runtime/hiyori_pro_t11.model3.json".to_string(),
             ws_url: "ws://127.0.0.1:18789".to_string(),
             ws_token: String::new(),
             chat_provider: "openclaw".to_string(),
@@ -344,7 +344,12 @@ pub struct WindowState {
 
 impl WindowState {
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 }
 
