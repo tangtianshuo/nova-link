@@ -22,7 +22,8 @@ pub fn run() {
             .plugin(tauri_plugin_updater::Builder::new().build());
     }
 
-    builder.manage(AppState::default())
+    builder
+        .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::chat_with_llm,
             commands::update_llm_config,
@@ -54,6 +55,11 @@ pub fn run() {
         ])
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");
+
+            // 首次启动时初始化配置文件
+            if let Err(e) = config::init_config_files() {
+                println!("[ERROR] Failed to initialize config files: {}", e);
+            }
 
             // 首次启动时根据屏幕尺寸计算窗口大小
             // 如果之前有保存的状态，会被 has_window_state() 检测到并恢复

@@ -50,6 +50,9 @@ export function useLive2D() {
 	const onMotionStartCallbacks: Array<(group: string) => void> = []
 	const onMotionEndCallbacks: Array<(group: string) => void> = []
 	const onExpressionChangeCallbacks: Array<(expression: string) => void> = []
+	const onContainerClickCallbacks: Array<
+		(x: number, y: number, isModelHit: boolean) => void
+	> = []
 
 	async function initLive2D(
 		containerId: string = "live2d-container",
@@ -258,6 +261,7 @@ export function useLive2D() {
 				stateMachine.handleUserInteraction()
 			}
 			onModelClickCallbacks.forEach((cb) => cb(_hitArea))
+			onContainerClickCallbacks.forEach((cb) => cb(0, 0, true))
 		})
 
 		mouseHandler.onDoubleClick(async (hitArea) => {
@@ -269,6 +273,13 @@ export function useLive2D() {
 
 		mouseHandler.onHover((hitArea) => {
 			onModelHoverCallbacks.forEach((cb) => cb(hitArea))
+		})
+
+		container.addEventListener("click", (e: MouseEvent) => {
+			const isModelHit = mouseHandler?.getHitArea(e.clientX, e.clientY) !== null
+			onContainerClickCallbacks.forEach((cb) =>
+				cb(e.clientX, e.clientY, isModelHit),
+			)
 		})
 
 		mouseHandler.init()
@@ -452,6 +463,12 @@ export function useLive2D() {
 		onModelClickCallbacks.push(callback)
 	}
 
+	function onContainerClick(
+		callback: (x: number, y: number, isModelHit: boolean) => void,
+	): void {
+		onContainerClickCallbacks.push(callback)
+	}
+
 	function onModelDoubleClick(callback: (hitArea: any) => void): void {
 		onModelDoubleClickCallbacks.push(callback)
 	}
@@ -510,6 +527,12 @@ export function useLive2D() {
 		if (stateMachine) {
 			stateMachine.playMotionGroup(motionName)
 		}
+	}
+
+	function checkHitArea(x: number, y: number): boolean {
+		if (!mouseHandler) return false
+		const hitArea = mouseHandler.getHitArea(x, y)
+		return hitArea !== null
 	}
 
 	function resetToIdle(): void {
@@ -604,6 +627,7 @@ export function useLive2D() {
 		playExpression,
 		playRandomExpression,
 		onModelClick,
+		onContainerClick,
 		onModelDoubleClick,
 		onModelHover,
 		onMotionStart,
@@ -617,6 +641,7 @@ export function useLive2D() {
 		setMotionVolume,
 		previewState,
 		previewMotion,
+		checkHitArea,
 		resetToIdle,
 		destroy,
 	}

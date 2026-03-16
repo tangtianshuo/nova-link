@@ -55,7 +55,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-vite-
 
-      - name: Build Tauri app (MSI)
+      - name: Build Tauri app (MSI + app)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +79,7 @@ jobs:
             - **Universal**: Nova Link_x.x.x_universal.dmg
           releaseDraft: false
           prerelease: false
-          args: "--bundles msi"
+          args: "--bundles msi,app"
 
   build-macos:
     if: github.event_name == 'workflow_dispatch' && (inputs.platform == 'all' || inputs.platform == 'macos') || github.event_name == 'push'
@@ -136,7 +136,7 @@ jobs:
           releaseName: "Nova Link ${{ github.ref_name }}"
           releaseDraft: false
           prerelease: false
-          args: "--target ${{ matrix.target }} --bundles dmg"
+          args: "--target ${{ matrix.target }} --bundles app,dmg"
 
   publish-latest-json:
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.platform == 'all')
@@ -218,11 +218,13 @@ jobs:
           fi
           if [ -n "${mac_x64_url}" ] && [ -n "${mac_x64_sig}" ]; then
             platforms="$(echo "${platforms}" | jq --arg url "${mac_x64_url}" --arg sig "${mac_x64_sig}" '. + {"darwin-x86_64": {"url": $url, "signature": $sig}}')"
-          elif [ -n "${mac_universal_sig_name}" ] && [ -n "${mac_arm_url}" ] && [ -n "${mac_arm_sig}" ]; then
-            platforms="$(echo "${platforms}" | jq --arg url "${mac_arm_url}" --arg sig "${mac_arm_sig}" '. + {"darwin-x86_64": {"url": $url, "signature": $sig}}')"
           fi
           if [ -n "${mac_arm_url}" ] && [ -n "${mac_arm_sig}" ]; then
             platforms="$(echo "${platforms}" | jq --arg url "${mac_arm_url}" --arg sig "${mac_arm_sig}" '. + {"darwin-aarch64": {"url": $url, "signature": $sig}}')"
+          elif [ -n "${mac_universal_sig_name}" ] && [ -n "${mac_arm_url}" ] && [ -n "${mac_arm_sig}" ]; then
+            # Universal binary can be used for both x86_64 and aarch64
+            platforms="$(echo "${platforms}" | jq --arg url "${mac_arm_url}" --arg sig "${mac_arm_sig}" '. + {"darwin-aarch64": {"url": $url, "signature": $sig}}')"
+            platforms="$(echo "${platforms}" | jq --arg url "${mac_arm_url}" --arg sig "${mac_arm_sig}" '. + {"darwin-x86_64": {"url": $url, "signature": $sig}}')"
           fi
 
           echo '{}' \

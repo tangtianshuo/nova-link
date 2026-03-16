@@ -104,20 +104,33 @@ export class MouseInteractionHandler {
 	}
 
 	getHitArea(x: number, y: number): HitArea | null {
-		if (!this.container) return { name: "Body", id: "Body" }
+		if (!this.container) return null
 
 		const rect = this.container.getBoundingClientRect()
 
 		if (rect.width === 0 || rect.height === 0) {
-			return { name: "Body", id: "Body" }
+			return null
 		}
 
 		const relX = (x - rect.left) / rect.width
 		const relY = (y - rect.top) / rect.height
 
-		// 点击在容器外
 		if (relX < 0 || relX > 1 || relY < 0 || relY > 1) {
-			return { name: "Body", id: "Body" }
+			return null
+		}
+
+		if (this.model?.hitTest) {
+			const hitAreas = this.model.hitTest(relX, relY)
+			if (!hitAreas || hitAreas.length === 0) {
+				return null
+			}
+			const hitAreaName = hitAreas[0]
+			return (
+				this.hitAreas.find((h) => h.name === hitAreaName) || {
+					name: hitAreaName,
+					id: hitAreaName,
+				}
+			)
 		}
 
 		const centerX = 0.5
@@ -126,12 +139,10 @@ export class MouseInteractionHandler {
 			Math.pow(relX - centerX, 2) + Math.pow(relY - centerY, 2),
 		)
 
-		// 中心区域为 Head
 		if (distFromCenter < 0.25) {
 			return { name: "Head", id: "Head" }
 		}
 
-		// 其他区域都视为 Body（支持整个下方区域点击）
 		return (
 			this.hitAreas.find((h) => h.name === "Body") || {
 				name: "Body",
@@ -152,9 +163,15 @@ export class MouseInteractionHandler {
 
 		const hitArea = this.getHitArea(e.clientX, e.clientY)
 		this.currentHoverArea = hitArea
+
+		if (!hitArea) {
+			this.eventElement.style.cursor = "default"
+			return
+		}
+
 		this.eventElement.style.cursor = "pointer"
 
-		if (this.hoverCallback && hitArea) {
+		if (this.hoverCallback) {
 			this.hoverCallback(hitArea)
 		}
 
@@ -200,13 +217,17 @@ export class MouseInteractionHandler {
 		const now = Date.now()
 		const hitArea = this.getHitArea(e.clientX, e.clientY)
 
+		if (!hitArea) {
+			return
+		}
+
 		if (now - this.lastClickTime < this.DOUBLE_CLICK_DELAY) {
-			if (this.doubleClickCallback && hitArea) {
+			if (this.doubleClickCallback) {
 				this.doubleClickCallback(hitArea, e.clientX, e.clientY)
 			}
 			this.lastClickTime = 0
 		} else {
-			if (this.clickCallback && hitArea) {
+			if (this.clickCallback) {
 				this.clickCallback(hitArea, e.clientX, e.clientY)
 			}
 			this.lastClickTime = now

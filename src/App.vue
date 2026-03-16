@@ -98,6 +98,9 @@
 		previewMotion,
 		resetToIdle,
 		getAvailableMotions,
+		onModelClick,
+		onContainerClick,
+		checkHitArea,
 	} = useLive2D()
 
 	// 可用的动画组列表
@@ -166,6 +169,7 @@
 		toggleAlwaysOnTop,
 		minimizeWindow,
 		closeWindow: closeAppWindow,
+		setIgnoreCursorEvents,
 	} = useWindow()
 
 	const showSettings = ref(false)
@@ -204,6 +208,38 @@
 		await initLive2D()
 		await loadLive2DModel(settings.value.modelPath)
 		updateAvailableMotions()
+
+		onContainerClick(async (x, y, isModelHit) => {
+			if (isModelHit) {
+				return
+			}
+
+			const container = document.getElementById("live2d-container")
+			if (!container) return
+
+			const rect = container.getBoundingClientRect()
+			const clickY = y - rect.top
+			const containerHeight = rect.height
+
+			if (clickY > containerHeight * 0.7) {
+				handleUserInteraction()
+				toggleChat(true)
+				nextTick(() => {
+					const inputEl = document.getElementById(
+						"message-input",
+					) as HTMLInputElement
+					inputEl?.focus()
+				})
+			} else {
+				if (isChatVisible.value) {
+					toggleChat(false)
+				}
+				await setIgnoreCursorEvents(true)
+				setTimeout(async () => {
+					await setIgnoreCursorEvents(false)
+				}, 100)
+			}
+		})
 
 		if (settings.value.wsUrl) {
 			connectWebSocket(settings.value.wsUrl, settings.value.wsToken)
@@ -350,32 +386,6 @@
 
 		if (!isClickInside && isChatVisible.value) {
 			toggleChat(false)
-		}
-	}
-
-	function handleLive2DClick(e: MouseEvent) {
-		const container = document.getElementById("live2d-container")
-		if (!container) return
-
-		const rect = container.getBoundingClientRect()
-		const clickY = e.clientY - rect.top
-		const containerHeight = rect.height
-
-		// 只有点击最下方 30% 区域时才显示输入框
-		if (clickY > containerHeight * 0.7) {
-			handleUserInteraction()
-			toggleChat(true)
-			nextTick(() => {
-				const inputEl = document.getElementById(
-					"message-input",
-				) as HTMLInputElement
-				inputEl?.focus()
-			})
-		} else {
-			// 点击其他区域隐藏输入框
-			if (isChatVisible.value) {
-				toggleChat(false)
-			}
 		}
 	}
 
@@ -542,10 +552,7 @@
 			:ws-status="wsStatus"
 			@close="handleAppClose"
 		/>
-		<Live2DContainer
-			:has-model="hasModel"
-			@click="handleLive2DClick"
-		/>
+		<Live2DContainer :has-model="hasModel" />
 		<ChatPanel
 			:visible="isChatVisible"
 			:messages="messages"

@@ -11,6 +11,11 @@ export function useWindow() {
     await saveSettings()
   }
 
+  async function setIgnoreCursorEvents(ignore: boolean): Promise<void> {
+    const win = await getCurrentWindow()
+    await win.setIgnoreCursorEvents(ignore)
+  }
+
   async function minimizeWindow(): Promise<void> {
     const win = await getCurrentWindow()
     await win.minimize()
@@ -57,6 +62,7 @@ export function useWindow() {
 
   return {
     toggleAlwaysOnTop,
+    setIgnoreCursorEvents,
     minimizeWindow,
     closeWindow,
     restoreWindowBounds,

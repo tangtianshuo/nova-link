@@ -373,3 +373,68 @@ pub fn load_window_state() -> Result<Option<WindowState>, String> {
 pub fn has_window_state() -> bool {
     load_window_state().map(|s| s.is_some()).unwrap_or(false)
 }
+
+// ============ 配置初始化 ============
+
+/// 初始化所有配置文件（首次安装时调用）
+pub fn init_config_files() -> Result<(), String> {
+    let config_dir = ensure_config_dir()?;
+    println!("[CONFIG] Initializing config files in: {:?}", config_dir);
+
+    // 初始化 config.json
+    let config_path = config_dir.join("config.json");
+    if !config_path.exists() {
+        let default_settings = AppSettings::default();
+        let json = serde_json::to_string_pretty(&default_settings).map_err(|e| e.to_string())?;
+        fs::write(&config_path, json).map_err(|e| e.to_string())?;
+        println!("[CONFIG] Created default config.json");
+    }
+
+    // 初始化 identity.json
+    let identity_path = config_dir.join("identity.json");
+    if !identity_path.exists() {
+        let default_identity = Identity::default();
+        let json = serde_json::to_string_pretty(&default_identity).map_err(|e| e.to_string())?;
+        fs::write(&identity_path, json).map_err(|e| e.to_string())?;
+        // 同时生成 identity.md
+        let md_path = config_dir.join("identity.md");
+        fs::write(&md_path, default_identity.to_markdown()).map_err(|e| e.to_string())?;
+        println!("[CONFIG] Created default identity.json and identity.md");
+    }
+
+    // 初始化 user.json
+    let user_path = config_dir.join("user.json");
+    if !user_path.exists() {
+        let default_user = User::default();
+        let json = serde_json::to_string_pretty(&default_user).map_err(|e| e.to_string())?;
+        fs::write(&user_path, json).map_err(|e| e.to_string())?;
+        // 同时生成 user.md
+        let md_path = config_dir.join("user.md");
+        fs::write(&md_path, default_user.to_markdown()).map_err(|e| e.to_string())?;
+        println!("[CONFIG] Created default user.json and user.md");
+    }
+
+    // 初始化 soul.json
+    let soul_path = config_dir.join("soul.json");
+    if !soul_path.exists() {
+        let default_soul = Soul::default();
+        let json = serde_json::to_string_pretty(&default_soul).map_err(|e| e.to_string())?;
+        fs::write(&soul_path, json).map_err(|e| e.to_string())?;
+        // 同时生成 soul.md
+        let md_path = config_dir.join("soul.md");
+        fs::write(&md_path, default_soul.to_markdown()).map_err(|e| e.to_string())?;
+        println!("[CONFIG] Created default soul.json and soul.md");
+    }
+
+    // 初始化 window.json（只在没有保存状态时创建默认窗口状态）
+    let window_path = config_dir.join("window.json");
+    if !window_path.exists() {
+        let default_window = WindowState::new(0, 0, 400, 800);
+        let json = serde_json::to_string_pretty(&default_window).map_err(|e| e.to_string())?;
+        fs::write(&window_path, json).map_err(|e| e.to_string())?;
+        println!("[CONFIG] Created default window.json");
+    }
+
+    println!("[CONFIG] Config initialization complete");
+    Ok(())
+}

@@ -40,6 +40,9 @@
 			],
 			"windows": {
 				"installMode": "passive"
+			},
+			"macOS": {
+				"installMode": "download"
 			}
 		}
 	},
