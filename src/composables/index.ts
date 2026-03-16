@@ -12,3 +12,6 @@ export { useChat } from "./useChat"
 export type { ChatMessage } from "./useChat"
 
 export { useGlobalDialog } from "./useGlobalDialog"
+
+export { useClickThrough } from "./useClickThrough"
+export type { ClickThroughOptions } from "./useClickThrough"

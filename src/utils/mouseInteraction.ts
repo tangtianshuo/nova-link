@@ -1,4 +1,5 @@
 import { MotionPriority } from "pixi-live2d-display/cubism4"
+import { PixelHitTest } from "./pixelHitTest"
 
 export interface HitArea {
 	name: string
@@ -35,9 +36,16 @@ export class MouseInteractionHandler {
 	private eventElement: HTMLElement | null = null
 	private currentHoverArea: HitArea | null = null
 
-	constructor(model: any, container: HTMLElement) {
+	private pixelHitTest: PixelHitTest | null = null
+
+	constructor(model: any, container: HTMLElement, pixiApp?: any) {
 		this.model = model
 		this.container = container
+
+		if (pixiApp) {
+			this.pixelHitTest = new PixelHitTest(pixiApp)
+		}
+
 		this.initHitAreas()
 	}
 
@@ -49,6 +57,7 @@ export class MouseInteractionHandler {
 					name: area.Name || area.name || "Unknown",
 					id: area.Id || area.id || "Unknown",
 				}))
+				console.log("[MouseInteraction] Loaded HitAreas:", this.hitAreas)
 			}
 		} catch (e) {
 			console.error("[MouseInteraction] Failed to load HitAreas:", e)
@@ -103,7 +112,7 @@ export class MouseInteractionHandler {
 		this.hoverCallback = callback
 	}
 
-	getHitArea(x: number, y: number): HitArea | null {
+	async getHitAreaAsync(x: number, y: number): Promise<HitArea | null> {
 		if (!this.container) return null
 
 		const rect = this.container.getBoundingClientRect()
@@ -112,43 +121,36 @@ export class MouseInteractionHandler {
 			return null
 		}
 
-		const relX = (x - rect.left) / rect.width
-		const relY = (y - rect.top) / rect.height
+		console.log("[Debug MouseInteraction] Pixel check:", {
+			clientX: x,
+			clientY: y,
+			rectWidth: rect.width,
+			rectHeight: rect.height,
+		})
 
-		if (relX < 0 || relX > 1 || relY < 0 || relY > 1) {
-			return null
-		}
+		if (this.pixelHitTest) {
+			try {
+				const pixelResult = await this.pixelHitTest.checkHit(x, y)
+				console.log("[Debug MouseInteraction] Pixel result:", pixelResult)
 
-		if (this.model?.hitTest) {
-			const hitAreas = this.model.hitTest(relX, relY)
-			if (!hitAreas || hitAreas.length === 0) {
-				return null
-			}
-			const hitAreaName = hitAreas[0]
-			return (
-				this.hitAreas.find((h) => h.name === hitAreaName) || {
-					name: hitAreaName,
-					id: hitAreaName,
+				if (pixelResult.isTransparent) {
+					console.log("[Debug MouseInteraction] Pixel is transparent, return null (should穿透)")
+					return null
 				}
-			)
-		}
 
-		const centerX = 0.5
-		const centerY = 0.5
-		const distFromCenter = Math.sqrt(
-			Math.pow(relX - centerX, 2) + Math.pow(relY - centerY, 2),
-		)
-
-		if (distFromCenter < 0.25) {
-			return { name: "Head", id: "Head" }
-		}
-
-		return (
-			this.hitAreas.find((h) => h.name === "Body") || {
-				name: "Body",
-				id: "Body",
+				console.log("[Debug MouseInteraction] Pixel is opaque, return Body (should not穿透)")
+				return { name: "Body", id: "Body" }
+			} catch (e) {
+				console.error("[Debug MouseInteraction] Pixel HitTest error:", e)
 			}
-		)
+		}
+
+		console.log("[Debug MouseInteraction] No pixelHitTest, assume transparent")
+		return null
+	}
+
+	getHitArea(_x: number, _y: number): HitArea | null {
+		return null
 	}
 
 	enableTracking(enabled: boolean): void {

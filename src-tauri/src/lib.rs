@@ -31,6 +31,8 @@ pub fn run() {
             commands::get_window_size,
             commands::set_default_window_size,
             commands::has_window_state,
+            commands::set_click_through,
+            commands::is_click_through_enabled,
             commands::save_setting,
             commands::get_setting,
             commands::gateway::run_gateway,

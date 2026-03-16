@@ -40,7 +40,6 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
         }
     }
     if let WindowEvent::Focused(focused) = event {
-        println!("[DEBUG] Window focused: {}", focused);
         // 当窗口获得焦点时，通知前端可能需要重新加载 Live2D
         if *focused {
             let _ = window.emit("window-shown", ());

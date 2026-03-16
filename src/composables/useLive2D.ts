@@ -167,8 +167,6 @@ export function useLive2D() {
 
 	function setupModelEventListeners(model: any): void {
 		model.on("hit", (hitAreas: string[]) => {
-			console.log("[useLive2D] Hit areas:", hitAreas)
-
 			hitAreas.forEach((area) => {
 				try {
 					model.motion(area, undefined, MotionPriority.FORCE)
@@ -182,14 +180,12 @@ export function useLive2D() {
 		if (motionManager) {
 			motionManager.on(
 				"motionStart",
-				(group: string, index: number, _audio: any) => {
-					console.log(`[useLive2D] Motion started: ${group}[${index}]`)
+				(group: string, _index: number, _audio: any) => {
 					onMotionStartCallbacks.forEach((cb) => cb(group))
 				},
 			)
 
 			motionManager.on("motionEnd", (group: string) => {
-				console.log(`[useLive2D] Motion ended: ${group}`)
 				onMotionEndCallbacks.forEach((cb) => cb(group))
 			})
 
@@ -197,7 +193,6 @@ export function useLive2D() {
 				motionManager.expressionManager.on(
 					"expressionChange",
 					(expression: string) => {
-						console.log(`[useLive2D] Expression changed: ${expression}`)
 						onExpressionChangeCallbacks.forEach((cb) => cb(expression))
 					},
 				)
@@ -213,34 +208,11 @@ export function useLive2D() {
 
 		const motionManager = live2dModel.internalModel.motionManager
 
-		console.log("[useLive2D] === Model Info ===")
-		console.log(
-			"[useLive2D] Available motion groups:",
-			Object.keys(motionManager.motionGroups || {}),
-		)
-
 		const motionGroupCounts: Record<string, number> = {}
 		for (const [group, motions] of Object.entries(
 			motionManager.motionGroups || {},
 		)) {
 			motionGroupCounts[group] = Array.isArray(motions) ? motions.length : 0
-		}
-		console.log("[useLive2D] Motion counts:", motionGroupCounts)
-
-		if (motionManager.expressionManager?.expressions) {
-			console.log(
-				"[useLive2D] Available expressions:",
-				Object.keys(motionManager.expressionManager.expressions),
-			)
-		}
-
-		const settings = live2dModel.internalModel?.modelSettings
-		if (settings) {
-			console.log("[useLive2D] Model settings:", {
-				name: settings.model?.name,
-				version: settings.model?.version,
-				groups: settings.json?.FileReferences?.Groups,
-			})
 		}
 	}
 
@@ -254,7 +226,7 @@ export function useLive2D() {
 
 		stateMachine = new AnimationStateMachine(live2dModel)
 
-		mouseHandler = new MouseInteractionHandler(live2dModel, container)
+		mouseHandler = new MouseInteractionHandler(live2dModel, container, live2dApp)
 
 		mouseHandler.onClick((_hitArea) => {
 			if (stateMachine) {
@@ -529,9 +501,9 @@ export function useLive2D() {
 		}
 	}
 
-	function checkHitArea(x: number, y: number): boolean {
+	async function checkHitArea(x: number, y: number): Promise<boolean> {
 		if (!mouseHandler) return false
-		const hitArea = mouseHandler.getHitArea(x, y)
+		const hitArea = await mouseHandler.getHitAreaAsync(x, y)
 		return hitArea !== null
 	}
 

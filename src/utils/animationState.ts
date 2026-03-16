@@ -194,13 +194,11 @@ export class AnimationStateMachine {
 			(group: string, _index: number, _audio: HTMLAudioElement | null) => {
 				this.isMotionPlaying = true
 				this.currentMotionGroup = group
-				console.log(`[AnimationStateMachine] Motion started: ${group}`)
 			},
 		)
 
-		motionManager.on("motionEnd", (group: string) => {
+		motionManager.on("motionEnd", (_group: string) => {
 			this.isMotionPlaying = false
-			console.log(`[AnimationStateMachine] Motion ended: ${group}`)
 		})
 	}
 
@@ -254,8 +252,6 @@ export class AnimationStateMachine {
 		const oldConfig = this.states.get(oldState)
 		oldConfig?.onExit?.()
 
-		console.log(`[AnimationStateMachine] Transition: ${oldState} -> ${state}`)
-
 		this.clearReturnTimer()
 		this.currentState = state
 		config.onEnter?.()
@@ -301,10 +297,6 @@ export class AnimationStateMachine {
 				} else {
 					await this.model.motion(motion.group, index, motion.priority)
 				}
-
-				console.log(
-					`[AnimationStateMachine] Playing motion: ${motion.group}[${index}] priority: ${motion.priority}`,
-				)
 			} catch (error) {
 				console.error(`[AnimationStateMachine] Failed to play motion:`, error)
 			}
@@ -412,9 +404,6 @@ export class AnimationStateMachine {
 			const expressionManager =
 				this.model.internalModel.motionManager.expressionManager
 			await expressionManager.setExpression(expressionName)
-			console.log(
-				`[AnimationStateMachine] Applied expression: ${expressionName}`,
-			)
 			return true
 		} catch (error) {
 			console.error(`[AnimationStateMachine] Failed to play expression:`, error)

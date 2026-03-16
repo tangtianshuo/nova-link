@@ -8,6 +8,7 @@
 		useWebSocket,
 		useChat,
 		useWindow,
+		useClickThrough,
 	} from "./composables"
 	import {
 		TitleBar,
@@ -169,8 +170,33 @@
 		toggleAlwaysOnTop,
 		minimizeWindow,
 		closeWindow: closeAppWindow,
-		setIgnoreCursorEvents,
 	} = useWindow()
+
+	const { handlePointerDown, handlePointerUp, handlePointerLeave } =
+		useClickThrough()
+
+	async function handlePointerDownForClickThrough(e: PointerEvent) {
+		const isModelHit = await checkHitArea(e.clientX, e.clientY)
+
+		handlePointerDown(e.clientX, e.clientY, isModelHit, () => {
+			handleUserInteraction()
+			toggleChat(true)
+			nextTick(() => {
+				const inputEl = document.getElementById(
+					"message-input",
+				) as HTMLInputElement
+				inputEl?.focus()
+			})
+		})
+	}
+
+	function handlePointerUpForClickThrough() {
+		handlePointerUp()
+	}
+
+	function handlePointerLeaveForClickThrough() {
+		handlePointerLeave()
+	}
 
 	const showSettings = ref(false)
 	const showContextMenu = ref(false)
@@ -209,36 +235,8 @@
 		await loadLive2DModel(settings.value.modelPath)
 		updateAvailableMotions()
 
-		onContainerClick(async (x, y, isModelHit) => {
-			if (isModelHit) {
-				return
-			}
-
-			const container = document.getElementById("live2d-container")
-			if (!container) return
-
-			const rect = container.getBoundingClientRect()
-			const clickY = y - rect.top
-			const containerHeight = rect.height
-
-			if (clickY > containerHeight * 0.7) {
-				handleUserInteraction()
-				toggleChat(true)
-				nextTick(() => {
-					const inputEl = document.getElementById(
-						"message-input",
-					) as HTMLInputElement
-					inputEl?.focus()
-				})
-			} else {
-				if (isChatVisible.value) {
-					toggleChat(false)
-				}
-				await setIgnoreCursorEvents(true)
-				setTimeout(async () => {
-					await setIgnoreCursorEvents(false)
-				}, 100)
-			}
+		onContainerClick(async (_x, _y, _isModelHit) => {
+			// 点击事件已由 handlePointerDownForClickThrough 处理
 		})
 
 		if (settings.value.wsUrl) {
@@ -280,6 +278,9 @@
 	function setupEventListeners() {
 		document.addEventListener("contextmenu", handleContextMenu)
 		document.addEventListener("click", handleDocumentClick)
+		document.addEventListener("pointerdown", handlePointerDownForClickThrough)
+		document.addEventListener("pointerup", handlePointerUpForClickThrough)
+		document.addEventListener("pointerleave", handlePointerLeaveForClickThrough)
 	}
 
 	function handleSendMessage(content: string) {

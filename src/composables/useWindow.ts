@@ -12,8 +12,14 @@ export function useWindow() {
   }
 
   async function setIgnoreCursorEvents(ignore: boolean): Promise<void> {
+    console.log("[Debug useWindow] setIgnoreCursorEvents called with:", ignore)
     const win = await getCurrentWindow()
-    await win.setIgnoreCursorEvents(ignore)
+    try {
+      await win.setIgnoreCursorEvents(ignore)
+      console.log("[Debug useWindow] setIgnoreCursorEvents success")
+    } catch (e) {
+      console.error("[Debug useWindow] setIgnoreCursorEvents error:", e)
+    }
   }
 
   async function minimizeWindow(): Promise<void> {

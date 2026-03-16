@@ -68,3 +68,24 @@ pub async fn set_default_window_size(window: tauri::Window) -> Result<WindowSize
 pub fn has_window_state() -> bool {
     config::has_window_state()
 }
+
+/// 设置窗口是否忽略鼠标事件（实现点击穿透）
+/// enabled: true - 忽略鼠标事件，事件穿透到下层窗口
+/// enabled: false - 恢复接收鼠标事件
+#[tauri::command]
+pub async fn set_click_through(window: tauri::Window, enabled: bool) -> Result<(), String> {
+    println!("[DEBUG] set_click_through: {}", enabled);
+    window
+        .set_ignore_cursor_events(enabled)
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// 查询当前点击穿透状态
+#[tauri::command]
+pub fn is_click_through_enabled(window: tauri::Window) -> Result<bool, String> {
+    // 注意：Tauri v2 目前没有直接查询 ignore_cursor_events 状态的 API
+    // 这里返回 Ok(false) 作为占位，实际状态由前端管理
+    let _ = window;
+    Ok(false)
+}
