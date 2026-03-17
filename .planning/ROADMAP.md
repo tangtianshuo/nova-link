@@ -7,7 +7,7 @@
 
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
-| 1 | 首次使用引导 | 实现分步式引导功能，介绍核心交互方式 | GUIDE-01 ~ GUIDE-12 | Pending |
+| 1 | 首次使用引导 | Complete    | 2026-03-17 | Pending |
 
 ## Phase 1: 首次使用引导
 
