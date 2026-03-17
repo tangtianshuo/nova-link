@@ -12,6 +12,7 @@
 	const emit = defineEmits<{
 		close: []
 		save: [settings: AppSettings]
+		resetOnboarding: []
 	}>()
 
 	const { settings, saveSettings, updateLlmConfig } = useSettings()
@@ -225,6 +226,16 @@
 			console.error("Failed to copy MCP config:", e)
 			gShowDialog({ message: "复制失败：" + e, type: "error" })
 		}
+	}
+
+	// 重置引导
+	async function handleResetOnboarding() {
+		// 先关闭设置面板
+		emit("close")
+		// 延迟一点再显示引导，确保设置面板关闭动画完成
+		setTimeout(() => {
+			emit("resetOnboarding")
+		}, 300)
 	}
 
 	// ============ 保存函数 ============
@@ -859,6 +870,17 @@
 										</div>
 									</div>
 								</div>
+
+								<!-- 重置引导按钮 -->
+								<div class="reset-onboarding-section">
+									<button
+										class="reset-onboarding-btn"
+										@click="handleResetOnboarding"
+									>
+										重新显示引导
+									</button>
+									<p class="reset-hint">点击重新显示首次使用引导</p>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -1409,6 +1431,36 @@
 	.sync-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.reset-onboarding-section {
+		margin-top: 20px;
+		padding-top: 16px;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		text-align: center;
+	}
+
+	.reset-onboarding-btn {
+		padding: 10px 20px;
+		border-radius: 10px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+		border: none;
+		background: linear-gradient(135deg, #22d3ee, #3b82f6);
+		color: white;
+	}
+
+	.reset-onboarding-btn:hover {
+		background: linear-gradient(135deg, #67e8f9, #60a5fa);
+		transform: translateY(-1px);
+	}
+
+	.reset-hint {
+		margin: 8px 0 0;
+		font-size: 12px;
+		color: #64748b;
 	}
 
 	.cancel-btn {

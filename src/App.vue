@@ -10,6 +10,7 @@
 		useWindow,
 		useSpeechBubble,
 		useEnvCheck,
+		useOnboarding,
 	} from "./composables"
 	import {
 		TitleBar,
@@ -20,6 +21,7 @@
 		Dialog,
 		SpeechBubble,
 		EnvironmentCheckModal,
+		OnboardingGuide,
 	} from "./components"
 	import { checkForUpdates } from "./utils/updater"
 
@@ -188,8 +190,63 @@
 	const { showEnvCheckModal, checkAndShowModal, closeModal, onModalDone } =
 		useEnvCheck()
 
+	// 首次使用引导
+	const showOnboarding = ref(false)
+	const {
+		checkOnboardingStatus,
+		markOnboardingSeen,
+		resetOnboarding,
+	} = useOnboarding()
+
+	// 显示引导
+	async function showOnboardingGuide() {
+		showOnboarding.value = true
+	}
+
+	// 关闭引导
+	async function handleOnboardingClose() {
+		showOnboarding.value = false
+		// 标记已看过引导
+		await markOnboardingSeen()
+	}
+
+	// 完成引导
+	async function handleOnboardingComplete() {
+		showOnboarding.value = false
+		// 标记已看过引导
+		await markOnboardingSeen()
+	}
+
+	// 从设置中重置引导
+	async function handleResetOnboardingFromSettings() {
+		// 重置引导状态
+		await resetOnboarding()
+		// 显示引导
+		showOnboardingGuide()
+	}
+
 	// 点击处理（不使用点击穿透）
 	async function handleContainerClick(e: PointerEvent) {
+		// 检查是否点击了底部区域（底部30%区域）
+		const container = document.getElementById("live2d-container")
+		if (container) {
+			const rect = container.getBoundingClientRect()
+			const clickY = e.clientY - rect.top
+			const isInBottomArea = clickY > rect.height * 0.7
+
+			if (isInBottomArea) {
+				// 点击底部区域，打开聊天面板
+				handleUserInteraction()
+				toggleChat(true)
+				// 聚焦输入框
+				nextTick(() => {
+					const inputEl = document.getElementById("message-input") as HTMLInputElement
+					inputEl?.focus()
+				})
+				return
+			}
+		}
+
 		// 检查是否点击了模型
 		const isModelHit = hasModel.value ? await checkHitArea(e.clientX, e.clientY) : false
 
@@ -232,6 +289,15 @@
 	async function init() {
 		await loadSettings()
 		applyBackground()
+
+		// 检查是否需要显示首次使用引导
+		const shouldShowOnboarding = await checkOnboardingStatus()
+		if (shouldShowOnboarding) {
+			// 延迟显示引导，确保其他初始化完成
+			setTimeout(() => {
+				showOnboardingGuide()
+			}, 1500)
+		}
 
 		await initLive2D()
 		await loadLive2DModel(settings.value.modelPath)
@@ -590,6 +656,7 @@
 			:mcp-status="mcpStatus"
 			@close="closeSettings"
 			@save="handleSettingsSave"
+			@reset-onboarding="handleResetOnboardingFromSettings"
 		/>
 		<ContextMenu
 			:visible="showContextMenu"
@@ -628,6 +695,12 @@
 			:visible="showEnvCheckModal"
 			@close="closeModal"
 			@done="onModalDone"
+		/>
+		<!-- 首次使用引导 -->
+		<OnboardingGuide
+			:visible="showOnboarding"
+			@close="handleOnboardingClose"
+			@complete="handleOnboardingComplete"
 		/>
 	</div>
 </template>
