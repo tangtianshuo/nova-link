@@ -1,281 +1,215 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-03-14
+**Analysis Date:** 2026-03-17
 
 ## Naming Patterns
 
-### Files
+**Files:**
+- Composables/Utils: `camelCase.ts` (e.g., `useWebSocket.ts`, `emotionParser.ts`, `animationState.ts`)
+- Vue Components: `PascalCase.vue` (e.g., `Dialog.vue`, `ChatPanel.vue`, `CharacterSettingsModal.vue`)
+- SDK: `camelCase.ts` (e.g., `client.ts`, `types.ts`)
+- Barrel files: `index.ts`
 
-- **Vue Components**: PascalCase with `.vue` extension
-  - Example: `CharacterSettingsModal.vue`, `ChatPanel.vue`, `Dialog.vue`
-- **TypeScript Files**: camelCase
-  - Example: `useWebSocket.ts`, `emotionParser.ts`, `animationState.ts`
-- **Type Definition Files**: camelCase with `.d.ts` suffix
-  - Example: `global.d.ts`, `shims-vue.d.ts`
-- **Barrel Files**: `index.ts` for exporting modules
+**Functions:**
+- camelCase: `connectWebSocket()`, `extractEmotion()`, `handleUserInteraction()`
+- Vue composables: `useWebSocket()`, `useChat()`, `useLive2D()`
 
-### Directories
+**Variables:**
+- camelCase: `wsStatus`, `reconnectTimer`, `gwClient`
+- Vue refs: `const wsStatus = ref<WsStatus>("disconnected")`
+- Boolean flags: `isConnected`, `hasModel`, `isMobile`
 
-- **Feature Directories**: camelCase
-  - Example: `src/composables/`, `src/utils/`, `src/sdk/`
-- **Components**: Plural `components/` for Vue components
+**Types:**
+- PascalCase: `WsStatus`, `ChatMessage`, `EmotionData`, `UseWebSocketOptions`
+- Enum values: `UPPER_SNAKE_CASE` for enum members (e.g., `AnimationState.IDLE`)
 
-### Functions
-
-- **Composable Functions**: camelCase, prefixed with `use`
-  - Example: `useWebSocket()`, `useSettings()`, `useLive2D()`
-- **Utility Functions**: camelCase
-  - Example: `extractEmotion()`, `cleanContent()`, `hexToRgb()`
-- **Class Methods**: camelCase
-  - Example: `connect()`, `disconnect()`, `sendMessage()`
-
-### Variables
-
-- **General Variables**: camelCase
-  - Example: `wsStatus`, `reconnectTimer`, `dialogVisible`
-- **Vue Refs**: camelCase (often suffixed with `Ref` when used with Composition API)
-  - Example: `const wsStatus = ref(...)`
-- **Constants**: UPPER_SNAKE_CASE for compile-time constants
-  - Example: `const RECONNECT_INTERVAL = 5000`
-- **Type Aliases**: PascalCase
-  - Example: `WsStatus`, `EmotionType`, `ChatMessage`
-
-### Types
-
-- **Interfaces**: PascalCase with descriptive suffixes
-  - Example: `UseWebSocketOptions`, `StateChangeEvent`, `AppSettings`
-- **Enums**: PascalCase with descriptive values
-  - Example: `AnimationState.IDLE`, `AnimationState.GREETING`
+**Constants:**
+- UPPER_SNAKE_CASE for magic numbers: `RECONNECT_INTERVAL = 5000`
+- Also camelCase for internal constants: `IDLE_TIMEOUT = 5 * 60 * 1000`
 
 ## Code Style
 
-### Formatting
+**Formatting:**
+- Tool: Not explicitly configured (no .prettierrc)
+- Indentation: 4 spaces (based on source files)
+- Semicolons: Used consistently
 
-- **Tool**: Built into Vite (esbuild) with TypeScript
-- **Indentation**: 2 spaces (consistent throughout codebase)
-- **Semicolons**: Used in TypeScript/JS
-- **Quotes**: Double quotes for strings in TypeScript
+**TypeScript:**
+- `tsconfig.json` settings:
+  - `strict: true` - Full strict type checking
+  - `noUnusedLocals: true` - Error on unused variables
+  - `noUnusedParameters: true` - Error on unused parameters
+  - `noFallthroughCasesInSwitch: true` - Require all switch cases
 
-### Linting
-
-- **Configuration**: Uses TypeScript strict mode
-- **tsconfig.json settings:**
-  ```json
-  {
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  }
-  ```
-
-### Vue SFC (Single File Components)
-
-- **Script**: `<script setup lang="ts">` for Composition API
-- **Props**: Defined with `defineProps<{...}>()` generic syntax
-- **Emits**: Defined with `defineEmits<{...}>()` generic syntax
-- **Style**: Scoped `<style scoped>` with Tailwind CSS classes
+**Linting:**
+- No explicit ESLint configuration found
 
 ## Import Organization
 
-### Order
+**Order:**
+1. Vue core: `import { ref, computed } from "vue"`
+2. External SDKs: `import { listen } from "@tauri-apps/api/event"`
+3. Local modules: `import { GatewayClient } from "../sdk/index.js"`
+4. Utilities: `import { extractEmotion } from "../utils/emotionParser"`
+5. Type imports: `import type { EmotionData } from "../sdk/types"`
 
-1. **Vue/Framework imports**: `vue` and `@vue/*`
-   ```typescript
-   import { ref, computed, onMounted } from "vue"
-   ```
-2. **External libraries**: `@tauri-apps/*`, `pixi.js`, etc.
-   ```typescript
-   import { invoke } from "@tauri-apps/api/core"
-   import { listen } from "@tauri-apps/api/event"
-   ```
-3. **Internal modules**: `./composables`, `./components`, `./utils`, `./sdk`
-   ```typescript
-   import { useSettings, useLive2D } from "./composables"
-   import { extractEmotion } from "../utils/emotionParser"
-   import { GatewayClient } from "../sdk/index.js"
-   ```
-4. **Type imports**: Separate `import type` statements
-   ```typescript
-   import type { EmotionData } from "../sdk/types"
-   ```
+**Path Aliases:**
+- `@` alias configured in `vite.config.ts`: maps to `./src`
+- Example: `import { TitleBar } from "@/components"`
 
-### Path Aliases
-
-- Not explicitly configured in tsconfig (uses relative paths)
-- Common relative path patterns: `../`, `./`
-
-### File Extensions
-
-- TypeScript files: Explicit `.ts` or `.tsx` extensions in imports
-- Vue files: `.vue` extension
-- JavaScript imports from SDK: `.js` extension
-  ```typescript
-  import { GatewayClient } from "../sdk/index.js"
-  ```
+**Extensions:**
+- Relative imports use `.js` extension for JavaScript files: `from "../sdk/index.js"`
 
 ## Error Handling
 
-### Pattern: Try-Catch with Fallbacks
+**Patterns:**
 
+1. **Optional Chaining & Nullish Coalescing:**
 ```typescript
-async function loadSettings(): Promise<void> {
-  isLoading.value = true
-  try {
-    const saved = await invoke<string | null>("get_setting", {
-      key: "app-settings",
-    })
-    if (saved) {
-      settings.value = { ...defaultSettings, ...JSON.parse(saved) }
-    }
-  } catch (e) {
-    // Fallback to localStorage
-    const saved = localStorage.getItem("nova-link-settings")
-    if (saved) {
-      try {
-        settings.value = { ...defaultSettings, ...JSON.parse(saved) }
-      } catch {}
-    }
-  } finally {
-    isLoading.value = false
-  }
+const content = filteredContent?.[0]?.text || ''
+gwClient?.isConnected ?? false
+options.onMessage?.(message)
+```
+
+2. **Try-Catch with Error Logging:**
+```typescript
+try {
+  const result = await gwClient.loadHistory(undefined, limit)
+} catch (e) {
+  console.error("[Gateway] Failed to get history:", e)
 }
 ```
 
-### Pattern: Error Boundaries in Callbacks
-
+3. **Promise Rejection:**
 ```typescript
-gwClient.connect().catch((err) => {
-  console.error("Failed to connect to Gateway:", err)
-  scheduleReconnect()
+return new Promise((resolve, reject) => {
+  // ...
+  reject(new Error("Connection timeout"))
 })
 ```
 
-### Pattern: Optional Chaining with Nullish Coalescing
-
+4. **Error Throwing:**
 ```typescript
-const content = filteredContent?.[0]?.text || ''
+throw new Error("Gateway not connected")
 ```
 
-### Pattern: Type Guards
-
+5. **Console Error Patterns:**
 ```typescript
-function isValidEmotionType(type: string): type is EmotionType {
-  return ["happy", "sad", "surprised", "angry", "idle"].includes(type)
-}
+console.error("[useWebSocket] Gateway error:", error)
+console.warn("[AnimationStateMachine] Motion group not found:", motion.group)
 ```
 
 ## Logging
 
-### Framework: console
+**Framework:** `@tauri-apps/plugin-log`
 
-- **Debug logs**: `console.debug()` (rarely used)
-- **Info logs**: `console.log()` (used sparingly for major flow)
-- **Warnings**: `console.warn()` (used for recoverable issues)
-- **Errors**: `console.error()` (used for failures)
-
-### Pattern: Tagged Console Logs
-
+**Logger Utilities:** `src/utils/logger.ts`
 ```typescript
-console.error("[useWebSocket] Gateway error:", error)
-console.error("[App] WebSocket error:", error)
-console.error("[AnimationState] Failed to play motion:", error)
+import { logInfo, logError, logWarn, logDebug, logTrace } from "@/utils/logger"
+import { info, error, warn, debug, trace } from "@tauri-apps/plugin-log"
 ```
+
+**Patterns:**
+- Prefix with module name: `[Nova Link]`, `[useWebSocket]`, `[Gateway]`
+- Use appropriate level: `info`, `warn`, `error`, `debug`, `trace`
+- Include context in error messages
+
+**Fallback:** Uses `console.error`, `console.warn`, `console.log` in some legacy code
 
 ## Comments
 
-### When to Comment
+**When to Comment:**
+- Chinese comments for logic explanation (common in this codebase)
+- JSDoc-style for exported functions
+- Section dividers in complex components
 
-- **Chinese comments** for module-level documentation
-  ```typescript
-  // 情绪解析工具模块
-  // 用于从大模型回复中提取情绪标签
-  ```
-- **JSDoc** for exported functions that have complex logic
-  ```typescript
-  /**
-   * 从文本中提取情绪标签
-   */
-  export function extractEmotion(text: string) { ... }
-  ```
-- **Inline comments** for non-obvious logic
-  ```typescript
-  // 只有点击最下方 30% 区域时才显示输入框
-  if (clickY > containerHeight * 0.7) { ... }
-  ```
+**Examples:**
+```typescript
+// 情绪解析工具模块
+// 用于从大模型回复中提取情绪标签
+// 情绪标签正则表达式
+const EMOTION_REGEX = /\[:emotion:(\w+):(\d+):\]/g
+```
 
-### Language
+```typescript
+/**
+ * 信息日志
+ */
+export function logInfo(message: string, ...args: unknown[]) {
+  // ...
+}
+```
 
-- Comments are primarily in **Chinese** (based on the project's target audience)
-- Variable names and code are in English
+**In Vue Components:**
+```typescript
+// 默认文案
+const defaultConfirmText = "确定"
+// 响应式窗口尺寸
+const windowWidth = ref(window.innerWidth)
+```
 
 ## Function Design
 
-### Size Guidelines
+**Size:** Functions tend to be medium-sized with single responsibility
 
-- Functions are typically single-purpose
-- Large functions are broken into smaller helper functions
-- Example: `emotionParser.ts` has `extractEmotion()`, `parseStreamEmotion()`, `cleanContent()`, `isValidEmotionType()`
+**Parameters:**
+- Use interfaces for complex options: `UseWebSocketOptions`
+- Default values for optional parameters: `limit: number = 20`
+- Use `options` object pattern for multiple optional params
 
-### Parameters
-
-- **Options Objects** for multiple optional parameters
-  ```typescript
-  export interface UseWebSocketOptions {
-    onMessage?: (message: any) => void
-    onStatusChange?: (status: WsStatus) => void
-    onStreamUpdate?: (text: string) => void
-    // ...
-  }
-  ```
-- **Default values** provided in function signature
-  ```typescript
-  async function loadHistory(limit: number = 20): Promise<any> { ... }
-  ```
-
-### Return Values
-
-- **Explicit return types** for exported functions
-- **Void** for side-effect functions
-- **Promise** for async operations
-- **null** used as explicit "not found" value
+**Return Values:**
+- Explicit return types: `function connectWebSocket(url: string, token?: string): void`
+- Promise for async: `async function loadHistory(limit: number = 20): Promise<any>`
+- Return early for error cases
 
 ## Module Design
 
-### Exports
+**Exports:**
+- Named exports preferred: `export function useWebSocket()`
+- Also re-export from index: `export { AnimationStateMachine as Live2DStateMachine }`
 
-- **Named exports** for composables and utilities
-  ```typescript
-  export { useSettings } from "./useSettings"
-  export type { AppSettings } from "./useSettings"
-  ```
-- **Default exports** for Vue components
-  ```typescript
-  export default defineComponent({ ... })
-  // or just the component in SFC
-  ```
+**Barrel Files:**
+- `src/components/index.ts` - Component re-exports
+- `src/composables/index.ts` - Composable re-exports
+- `src/sdk/index.ts` - SDK re-exports
 
-### Barrel Files
+## Vue-Specific Conventions
 
-- **composables/index.ts**: Re-exports all composables
-- **components/index.ts**: Re-exports all Vue components
-- **sdk/index.ts**: Re-exports SDK classes
+**Composition API:**
+- Use `<script setup lang="ts">` syntax
+- `defineProps` with type inference: `defineProps<{ visible: boolean }>()`
+- `defineEmits` for event definitions
+- Destructured composable returns
 
-### Vue Component Patterns
+**State Management:**
+- Vue `ref` for reactive primitives
+- Vue `reactive` for object state
+- Computed properties for derived state
 
-- **Composition API with `<script setup>`**
-- **Reactive state** using `ref()` and `reactive()`
-- **Props** defined with `defineProps()`
-- **Events** defined with `defineEmits()`
-- **Lifecycle hooks**: `onMounted()`, `watch()`, `onUnmounted()`
+**Event Handling:**
+- Props for parent-to-child communication
+- Emits for child-to-parent communication
+- Global event bus via `window` object for dialogs: `(window as any).$showDialog`
 
-### Rust Backend Conventions
+## Rust Backend Conventions (src-tauri)
 
-- **Module organization**: Separate files in `commands/` directory
-- **Command handlers**: `#[tauri::command]` attribute
-- **Error handling**: `Result<T, String>` for command returns
-- **Logging**: `println!("[DEBUG] ...")` for debug output
+**Naming:**
+- snake_case for functions and variables
+- PascalCase for structs and enums
+- Modules: `snake_case.rs`
+
+**Command Pattern:**
+```rust
+#[tauri::command]
+pub fn save_setting(key: String, value: String) -> Result<(), String> {
+    // ...
+}
+```
+
+**Error Handling:**
+- Return `Result<T, String>` for error propagation
+- Use `println!` for debug output
 
 ---
 
-*Convention analysis: 2026-03-14*
+*Convention analysis: 2026-03-17*

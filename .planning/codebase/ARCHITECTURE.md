@@ -1,163 +1,145 @@
-# Architecture
+# 架构
 
-**Analysis Date:** 2026-03-14
+**分析日期：** 2026-03-17
 
-## Pattern Overview
+## 模式概述
 
-**Overall:** Event-driven composable architecture with Tauri IPC bridge
+**总体模式：** 前端-后端分离 + 事件驱动架构
 
-**Key Characteristics:**
-- Vue 3 Composition API pattern with composables for state management
-- Tauri v2 Rust backend providing native system integration and LLM API calls
-- WebSocket-based real-time communication with OpenClaw Gateway
-- State machine pattern for Live2D animation control
-- Transparent frameless window with glassmorphism UI
+**关键特性：**
+- **Tauri v2 桌面应用**：Rust 后端 + Vue 3 前端的混合架构
+- **WebSocket 实时通信**：与 OpenClaw Gateway 的双向通信
+- **状态机驱动动画**：基于状态机的 Live2D 动画控制系统
+- **Composable 组合式逻辑**：Vue 3 Composition API 封装业务逻辑
 
-## Layers
+## 分层
 
-**Frontend (Vue 3 + TypeScript):**
-- Location: `src/`
-- Contains: Vue components, composables, SDK, utilities
-- Depends on: Tauri API, PIXI.js, pixi-live2d-display
+**表现层 (Frontend - Vue 3)：**
+- 位置：`src/`
+- 包含：Vue 组件 (`.vue`)、Composables (`.ts`)
+- 依赖：PIXI.js (Live2D渲染)、Tauri API (Rust通信)
+- 被使用：Tauri WebView
 
-**Composables Layer:**
-- Purpose: Reactive state management and business logic
-- Location: `src/composables/`
-- Contains: `useSettings`, `useLive2D`, `useWebSocket`, `useChat`, `useWindow`
-- Depends on: SDK, utilities, Tauri invoke
-- Used by: App.vue and components
+**业务逻辑层 (Frontend Composables)：**
+- 位置：`src/composables/`
+- 包含：useWebSocket、useLive2D、useChat、useSettings、useWindow 等
+- 依赖：SDK (GatewayClient)、Utils (animationState)
+- 被使用：App.vue 及各组件
 
-**SDK Layer:**
-- Purpose: WebSocket protocol handling for OpenClaw Gateway
-- Location: `src/sdk/`
-- Contains: `client.ts` - GatewayClient class with WebSocket connection management
-- Depends on: Native WebSocket API
-- Used by: `useWebSocket.ts` composable
+**SDK 层 (Frontend)：**
+- 位置：`src/sdk/client.ts`
+- 包含：GatewayClient 类 - WebSocket 协议封装
+- 依赖：原生 WebSocket API
+- 被使用：useWebSocket composable
 
-**Utilities Layer:**
-- Purpose: Animation state machine, emotion parsing, mouse interaction
-- Location: `src/utils/`
-- Contains: `animationState.ts`, `emotionParser.ts`, `mouseInteraction.ts`
-- Used by: `useLive2D.ts` composable
+**平台适配层 (Frontend Utils)：**
+- 位置：`src/utils/`
+- 包含：animationState (状态机)、emotionParser (情感解析)、mouseInteraction (鼠标交互)
+- 依赖：pixi-live2d-display
+- 被使用：useLive2D composable
 
-**Components Layer:**
-- Purpose: UI rendering
-- Location: `src/components/`
-- Contains: `ChatPanel.vue`, `Live2DContainer.vue`, `TitleBar.vue`, `ContextMenu.vue`, `Dialog.vue`, `CharacterSettingsModal.vue`
-- Depends on: Composables for state
+**命令层 (Backend - Rust)：**
+- 位置：`src-tauri/src/commands/`
+- 包含：settings、gateway、llm、identity、user、soul、window、mcp、env_check
+- 依赖：Tauri 框架、Rust 生态系统
+- 被使用：Frontend via Tauri invoke
 
-**Backend (Tauri/Rust):**
-- Purpose: Native system integration, JSON config, LLM API, MCP server
-- Location: `src-tauri/src/`
-- Contains: `lib.rs`, `commands/`, `mcp/`, `config.rs`, `tray.rs`, `window.rs`
+**基础设施层 (Backend - Rust)：**
+- 位置：`src-tauri/src/`
+- 包含：lib.rs、config.rs、state.rs、window.rs、tray.rs、powershell.rs
+- 依赖：Tauri、serde、tokio、env_logger
 
-**Commands Layer:**
-- Purpose: Tauri command handlers exposed to frontend
-- Location: `src-tauri/src/commands/`
-- Contains: `settings.rs`, `gateway.rs`, `llm.rs`, `identity.rs`, `user.rs`, `soul.rs`, `window.rs`, `mcp.rs`
-- Depends on: `config.rs`, Tauri APIs
-- Used by: Frontend via `invoke()`
+## 数据流
 
-**MCP Layer:**
-- Purpose: Model Context Protocol server for external animation control
-- Location: `src-tauri/src/mcp/`
-- Contains: `server.rs`, `http_server.rs`, `types.rs`
-- Provides: JSON-RPC based tools for animation control
+**聊天消息流程：**
 
-## Data Flow
+1. **用户发送消息** → ChatPanel.vue 触发 `@send` 事件 → App.vue `handleSendMessage()`
+2. **选择发送方式** → 根据 `settings.chatProvider` 判断：
+   - `openclaw`：调用 `useWebSocket().sendMessage()` → GatewayClient 发送 WebSocket 消息
+   - `llm`：调用 Rust `invoke("chat_with_llm")` → 直接调用 LLM API
+3. **Gateway 响应** → SDK 接收 `agent` 事件 → 触发 `onMessageStart` / `onMessageStop` 回调
+4. **显示思考状态** → `startThinking()` 显示 "正在思考..." 指示器
+5. **接收响应内容** → `onContentDelta` 回调更新消息 → `addMessage("bot", content)` 添加到面板
+6. **情感解析** → `emotionParser.ts` 提取 `[:emotion:TYPE:DURATION:]` 标签
+7. **触发动画** → `useLive2D().handleEmotion()` → AnimationStateMachine 状态转换
 
-**Chat Message Flow:**
+**窗口管理流程：**
 
-1. **User sends message**
-   - ChatPanel.vue emits send event
-   - App.vue `handleSendMessage()` determines provider (openclaw/llm)
+1. **初始化** → lib.rs `setup()` 检测是否有保存的窗口状态
+2. **恢复/创建** → 有状态：从 `exe/config/window.json` 恢复；无状态：根据屏幕尺寸计算 (1/6 屏幕宽度)
+3. **事件处理** → `on_window_event` 监听 resize/move 事件 → 调用 `config::save_window_state()` 持久化
 
-2. **OpenClaw Gateway mode:**
-   - `sendWsMessage(content)` from `useWebSocket`
-   - GatewayClient sends via WebSocket to OpenClaw Gateway
+**MCP 动画控制流程：**
 
-3. **Gateway responds**
-   - SDK receives `agent` event with lifecycle (start/end)
-   - `onMessageStart` callback displays thinking indicator
-   - `onStreamUpdate` / `onContentDelta` for streaming content
-   - `onMessageStop` triggers final message handling
+1. **外部请求** → HTTP 请求到 `localhost:18787` → `mcp/http_server.rs` 处理
+2. **JSON-RPC 解析** → `server.rs` 解析请求 → 调用工具函数
+3. **前端事件** → Rust 调用 `app.emit()` 发送事件到前端
+4. **动画执行** → 前端监听 `mcp-animation` / `mcp-emotion` 事件 → 触发状态机转换
 
-4. **Display in chat**
-   - `addMessage("bot", content)` from `useChat`
-   - Emotion parser extracts `[:emotion:type:duration:]` tags
+## 关键抽象
 
-5. **Trigger animation**
-   - `handleEmotion()` from `useLive2D`
-   - AnimationStateMachine transitions to emotion state
+**GatewayClient (SDK)：**
+- 目的：封装 WebSocket 协议，实现与 OpenClaw Gateway 的通信
+- 示例：`src/sdk/client.ts`
+- 模式：单例模式，通过回调处理各种事件
 
-**State Management:**
-- Composables use Vue 3 `ref` and `reactive` for reactive state
-- Settings persist via Tauri invoke to Rust backend
-- Window state saved to JSON config on resize/move
+**AnimationStateMachine (状态机)：**
+- 目的：管理 Live2D 模型的状态转换和动画播放
+- 示例：`src/utils/animationState.ts`
+- 模式：状态模式 - 定义 IDLE、GREETING、TALKING、LISTENING、THINKING、HAPPY、SAD、SURPRISED、ANGRY、SLEEPING 等状态
 
-## Key Abstractions
+**useLive2D (Composable)：**
+- 目的：封装 Live2D 模型的加载、交互和动画控制
+- 示例：`src/composables/useLive2D.ts`
+- 模式：工厂函数模式，返回丰富的 API 对象
 
-**GatewayClient:**
-- Purpose: WebSocket client for OpenClaw Gateway protocol
-- Location: `src/sdk/client.ts`
-- Pattern: Event-driven with callback options
+**Tauri Commands (命令模式)：**
+- 目的：前端调用 Rust 后端功能的入口
+- 示例：`src-tauri/src/commands/` 下的各个模块
+- 模式：命令模式 - 每个命令是一个独立的函数
 
-**AnimationStateMachine:**
-- Purpose: Manages Live2D model animation states
-- Location: `src/utils/animationState.ts`
-- Pattern: State machine with timer-based transitions
+## 入口点
 
-**useWebSocket:**
-- Purpose: Composable wrapper around GatewayClient
-- Location: `src/composables/useWebSocket.ts`
-- Pattern: Vue composable with reactive state
+**前端入口：**
+- 位置：`src/main.ts`
+- 触发：Tauri WebView 加载
+- 职责：创建 Vue 应用、注册全局组件 (Dialog)、挂载到 #app
 
-**useLive2D:**
-- Purpose: Live2D model loading and animation control
-- Location: `src/composables/useLive2D.ts`
-- Pattern: Vue composable with PIXI.js integration
+**后端入口：**
+- 位置：`src-tauri/src/lib.rs`
+- 触发：Tauri 应用启动
+- 职责：初始化 Tauri Builder、注册命令、设置窗口、创建系统托盘
 
-## Entry Points
+**组件入口：**
+- 位置：`src/App.vue`
+- 触发：Vue 应用挂载后
+- 职责：初始化所有 composables、协调各组件、控制整体布局
 
-**Frontend Entry:**
-- Location: `src/main.ts`
-- Triggers: Tauri app launch
-- Responsibilities: Vue app initialization, global component registration
+## 错误处理
 
-**Main App Component:**
-- Location: `src/App.vue`
-- Triggers: Vue app mount
-- Responsibilities: Initialize composables, setup event listeners, coordinate UI
+**策略：** 分层处理 + 全局捕获
 
-**Rust Entry:**
-- Location: `src-tauri/src/main.rs`
-- Triggers: Tauri app launch
-- Responsibilities: Call `lib::run()` for Tauri setup
+**模式：**
+1. **前端组件级** → try-catch 包裹异步操作，显示用户友好的错误消息
+2. **Composable 级** → 内部捕获错误，转换为可显示的状态 (error ref)
+3. **全局 Vue 错误处理** → `app.config.errorHandler` 捕获未处理错误 → 发送到 Rust 日志
+4. **Rust 命令级** → 使用 `Result<T, String>` 返回错误 → 前端 `invoke().catch()` 处理
 
-**Tauri Setup:**
-- Location: `src-tauri/src/lib.rs`
-- Triggers: From main.rs
-- Responsibilities: Command registration, window setup, system tray, transparent window handling
+## 跨领域关注
 
-## Error Handling
+**日志：**
+- 前端：使用 `@tauri-apps/plugin-log` 的 `attachConsole` 和 `error`
+- Rust：使用 `env_logger` 和 `println!`
 
-**Frontend:**
-- Try-catch blocks in async operations
-- Error callbacks in WebSocket SDK
-- Console.error for debugging
+**验证：**
+- 组件 props 使用 TypeScript 类型
+- Rust 命令参数使用 serde 验证
 
-**Backend:**
-- Rust Result types for error propagation
-- env_logger for debug output
-- Error messages returned via Tauri invoke responses
-
-## Cross-Cutting Concerns
-
-**Logging:** Console.log/console.error in frontend, env_logger in Rust
-**Validation:** TypeScript types in frontend, JSON schema for MCP
-**Authentication:** WebSocket token support in GatewayClient
-**Window Management:** Tauri window API, JSON config persistence
+**认证：**
+- WebSocket 连接支持 token 认证
+- LLM API 使用 API Key 认证
+- 环境变量存储敏感信息
 
 ---
 
-*Architecture analysis: 2026-03-14*
+*架构分析：2026-03-17*
