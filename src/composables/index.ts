@@ -13,12 +13,6 @@ export type { ChatMessage } from "./useChat"
 
 export { useGlobalDialog } from "./useGlobalDialog"
 
-export { useClickThrough } from "./useClickThrough"
-export type { ClickThroughOptions } from "./useClickThrough"
-
-export { useSmartClickThrough } from "./useSmartClickThrough"
-export type { SmartClickThroughOptions } from "./useSmartClickThrough"
-
 export { useSpeechBubble } from "./useSpeechBubble"
 
 export { useEnvCheck } from "./useEnvCheck"

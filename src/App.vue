@@ -8,7 +8,6 @@
 		useWebSocket,
 		useChat,
 		useWindow,
-		useSmartClickThrough,
 		useSpeechBubble,
 		useEnvCheck,
 	} from "./composables"
@@ -185,63 +184,20 @@
 		closeWindow: closeAppWindow,
 	} = useWindow()
 
-	const {
-		handlePointerDown: handleSmartPointerDown,
-		handlePointerUp: handleSmartPointerUp,
-		handlePointerLeave: handleSmartPointerLeave,
-	} = useSmartClickThrough()
-
 	// 环境检测
 	const { showEnvCheckModal, checkAndShowModal, closeModal, onModalDone } =
 		useEnvCheck()
 
-	async function handlePointerDownForClickThrough(e: PointerEvent) {
-		const isModelHit = await checkHitArea(e.clientX, e.clientY)
+	// 点击处理（不使用点击穿透）
+	async function handleContainerClick(e: PointerEvent) {
+		// 检查是否点击了模型
+		const isModelHit = hasModel.value ? await checkHitArea(e.clientX, e.clientY) : false
 
-		const { action, shouldEnableThrough } = await handleSmartPointerDown(
-			e.clientX,
-			e.clientY,
-			isModelHit,
-		)
-
-		switch (action) {
-			case "drag":
-				// Let Tauri handle window dragging (top drag region)
-				break
-			case "chat":
-				// Open chat panel
-				handleUserInteraction()
-				toggleChat(true)
-				nextTick(() => {
-					const inputEl = document.getElementById(
-						"message-input",
-					) as HTMLInputElement
-					inputEl?.focus()
-				})
-				break
-			case "model":
-				// Trigger model interaction
-				handleUserInteraction()
-				break
-			case "through":
-				// Enable click-through on empty area
-				if (shouldEnableThrough) {
-					// Click-through is handled internally by useSmartClickThrough
-				}
-				break
-			case "none":
-			default:
-				// Default behavior - do nothing special
-				break
+		if (isModelHit) {
+			// 点击了模型，触发动画
+			handleUserInteraction()
 		}
-	}
-
-	function handlePointerUpForClickThrough() {
-		handleSmartPointerUp()
-	}
-
-	function handlePointerLeaveForClickThrough() {
-		handleSmartPointerLeave()
+		// 点击空白区域不执行任何穿透操作
 	}
 
 	const showSettings = ref(false)
@@ -324,9 +280,7 @@
 	function setupEventListeners() {
 		document.addEventListener("contextmenu", handleContextMenu)
 		document.addEventListener("click", handleDocumentClick)
-		document.addEventListener("pointerdown", handlePointerDownForClickThrough)
-		document.addEventListener("pointerup", handlePointerUpForClickThrough)
-		document.addEventListener("pointerleave", handlePointerLeaveForClickThrough)
+		document.addEventListener("click", handleContainerClick)
 	}
 
 	function handleSendMessage(content: string) {
