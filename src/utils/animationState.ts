@@ -483,7 +483,7 @@ export class AnimationStateMachine {
 		}
 
 		if (this.model?.internalModel?.motionManager) {
-			this.model.internalModel.motionManager.stopAll()
+			this.model.internalModel.motionManager.stopAllMotions()
 		}
 	}
 }

@@ -8,7 +8,7 @@
 		useWebSocket,
 		useChat,
 		useWindow,
-		useClickThrough,
+		useSmartClickThrough,
 		useSpeechBubble,
 		useEnvCheck,
 	} from "./composables"
@@ -185,8 +185,11 @@
 		closeWindow: closeAppWindow,
 	} = useWindow()
 
-	const { handlePointerDown, handlePointerUp, handlePointerLeave } =
-		useClickThrough()
+	const {
+		handlePointerDown: handleSmartPointerDown,
+		handlePointerUp: handleSmartPointerUp,
+		handlePointerLeave: handleSmartPointerLeave,
+	} = useSmartClickThrough()
 
 	// 环境检测
 	const { showEnvCheckModal, checkAndShowModal, closeModal, onModalDone } =
@@ -195,24 +198,50 @@
 	async function handlePointerDownForClickThrough(e: PointerEvent) {
 		const isModelHit = await checkHitArea(e.clientX, e.clientY)
 
-		handlePointerDown(e.clientX, e.clientY, isModelHit, () => {
-			handleUserInteraction()
-			toggleChat(true)
-			nextTick(() => {
-				const inputEl = document.getElementById(
-					"message-input",
-				) as HTMLInputElement
-				inputEl?.focus()
-			})
-		})
+		const { action, shouldEnableThrough } = await handleSmartPointerDown(
+			e.clientX,
+			e.clientY,
+			isModelHit,
+		)
+
+		switch (action) {
+			case "drag":
+				// Let Tauri handle window dragging (top drag region)
+				break
+			case "chat":
+				// Open chat panel
+				handleUserInteraction()
+				toggleChat(true)
+				nextTick(() => {
+					const inputEl = document.getElementById(
+						"message-input",
+					) as HTMLInputElement
+					inputEl?.focus()
+				})
+				break
+			case "model":
+				// Trigger model interaction
+				handleUserInteraction()
+				break
+			case "through":
+				// Enable click-through on empty area
+				if (shouldEnableThrough) {
+					// Click-through is handled internally by useSmartClickThrough
+				}
+				break
+			case "none":
+			default:
+				// Default behavior - do nothing special
+				break
+		}
 	}
 
 	function handlePointerUpForClickThrough() {
-		handlePointerUp()
+		handleSmartPointerUp()
 	}
 
 	function handlePointerLeaveForClickThrough() {
-		handlePointerLeave()
+		handleSmartPointerLeave()
 	}
 
 	const showSettings = ref(false)

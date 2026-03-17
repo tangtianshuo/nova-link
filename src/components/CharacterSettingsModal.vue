@@ -303,6 +303,7 @@
 			settings.value.llmApiKey = localSettings.llmApiKey
 			settings.value.llmApiUrl = localSettings.llmApiUrl
 			settings.value.llmModel = localSettings.llmModel
+			settings.value.clickThroughEnabled = localSettings.clickThroughEnabled
 			await saveSettings()
 			await updateLlmConfig()
 
@@ -814,6 +815,19 @@
 											v-model="localSettings.bgOpacity"
 										/>
 									</div>
+									<div class="form-group full-width">
+										<label class="checkbox-label">
+											<input
+												id="setting-click-through"
+												type="checkbox"
+												v-model="localSettings.clickThroughEnabled"
+											/>
+											智能点击穿透
+										</label>
+										<p class="setting-hint">
+											启用后，点击空白区域将穿透到下层窗口。顶部拖拽区和底部聊天区保持交互。
+										</p>
+									</div>
 								</div>
 
 								<!-- LLM 设置 -->
@@ -1255,12 +1269,18 @@
 		font-size: 13px;
 		color: #94a3b8;
 		cursor: pointer;
-		margin-left: auto;
 	}
 
 	.checkbox-label input {
 		width: 16px;
 		height: 16px;
+	}
+
+	.setting-hint {
+		font-size: 11px;
+		color: #64748b;
+		margin: 4px 0 0 22px;
+		line-height: 1.4;
 	}
 
 	/* Soul 编辑器 */

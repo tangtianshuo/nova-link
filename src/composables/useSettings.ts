@@ -19,6 +19,7 @@ export interface AppSettings {
 	windowHeight?: number
 	windowX?: number
 	windowY?: number
+	clickThroughEnabled: boolean
 }
 
 const DEFAULT_MODEL_PATH =
@@ -37,6 +38,7 @@ const defaultSettings: AppSettings = {
 	bgColor: "#1e293b",
 	bgOpacity: 0.2,
 	bgBlur: true,
+	clickThroughEnabled: true,
 }
 
 const settings = ref<AppSettings>({ ...defaultSettings })
