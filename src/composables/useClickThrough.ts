@@ -19,21 +19,15 @@ export function useClickThrough(options: ClickThroughOptions = {}) {
 	let clickThroughTimeout: ReturnType<typeof setTimeout> | null = null
 
 	async function setIgnoreCursorEvents(ignore: boolean): Promise<void> {
-		console.log("[Debug useClickThrough] setIgnoreCursorEvents:", ignore)
 		const win = await getCurrentWindow()
 		try {
 			await win.setIgnoreCursorEvents(ignore)
-			console.log("[Debug useClickThrough] setIgnoreCursorEvents success")
 		} catch (e) {
-			console.error("[Debug useClickThrough] setIgnoreCursorEvents error:", e)
+			console.error("[useClickThrough] setIgnoreCursorEvents error:", e)
 		}
 	}
 
 	async function enableClickThrough(): Promise<void> {
-		console.log(
-			"[Debug useClickThrough] enableClickThrough, current:",
-			isClickThrough.value,
-		)
 		if (isClickThrough.value) return
 
 		isClickThrough.value = true
@@ -44,17 +38,12 @@ export function useClickThrough(options: ClickThroughOptions = {}) {
 		}
 		clickThroughTimeout = setTimeout(() => {
 			if (isClickThrough.value) {
-				console.log("[Debug useClickThrough] timeout auto-disable")
 				disableClickThrough()
 			}
 		}, timeout)
 	}
 
 	async function disableClickThrough(): Promise<void> {
-		console.log(
-			"[Debug useClickThrough] disableClickThrough, current:",
-			isClickThrough.value,
-		)
 		if (!isClickThrough.value) return
 
 		isClickThrough.value = false
@@ -82,29 +71,19 @@ export function useClickThrough(options: ClickThroughOptions = {}) {
 		isModelHit: boolean,
 		onBottomAreaClick?: () => void,
 	): void {
-		console.log("[Debug useClickThrough] handlePointerDown:", {
-			x,
-			y,
-			isModelHit,
-		})
-
 		if (isBottomArea(x, y)) {
-			console.log("[Debug useClickThrough] Click in bottom area, not穿透")
 			onBottomAreaClick?.()
 			return
 		}
 
 		if (!isModelHit) {
-			console.log("[Debug useClickThrough] Not model hit, start long press timer")
 			longPressTimer = setTimeout(() => {
-				console.log("[Debug useClickThrough] Long press triggered")
 				enableClickThrough()
 			}, longPressThreshold)
 		}
 	}
 
 	function handlePointerUp(): void {
-		console.log("[Debug useClickThrough] handlePointerUp")
 		if (longPressTimer) {
 			clearTimeout(longPressTimer)
 			longPressTimer = null
@@ -113,7 +92,6 @@ export function useClickThrough(options: ClickThroughOptions = {}) {
 	}
 
 	function handlePointerLeave(): void {
-		console.log("[Debug useClickThrough] handlePointerLeave")
 		if (longPressTimer) {
 			clearTimeout(longPressTimer)
 			longPressTimer = null

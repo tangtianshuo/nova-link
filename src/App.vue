@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, reactive, onMounted, watch, nextTick } from "vue"
+	import { ref, reactive, onMounted, watch, nextTick, onErrorCaptured } from "vue"
 	import { listen } from "@tauri-apps/api/event"
 	import { invoke } from "@tauri-apps/api/core"
 	import {
@@ -512,6 +512,18 @@
 				console.error("加载历史记录失败:", e)
 			}
 		}
+	})
+
+	// Component-level error boundary
+	onErrorCaptured((err, instance, info) => {
+		console.error("[App Error Boundary] Caught error:", err, "Info:", info)
+		showGlobalDialog({
+			title: "组件错误",
+			message: "某个组件发生错误: " + String(err).slice(0, 100),
+			type: "warning",
+		})
+		// Return false to prevent error from propagating further
+		return false
 	})
 
 	onMounted(async () => {

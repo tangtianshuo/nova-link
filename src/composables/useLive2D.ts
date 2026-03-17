@@ -8,6 +8,7 @@ import {
 } from "pixi-live2d-display/cubism4"
 import { AnimationStateMachine, AnimationState } from "../utils/animationState"
 import { MouseInteractionHandler } from "../utils/mouseInteraction"
+import { useGlobalDialog } from "./useGlobalDialog"
 ;(window as any).PIXI = PIXI
 
 async function ensureCubismCoreLoaded(): Promise<void> {
@@ -160,6 +161,14 @@ export function useLive2D() {
 			console.error("[useLive2D] Failed to load model:", e)
 			error.value = String(e)
 			hasModel.value = false
+
+			// Show user-friendly error dialog
+			const { showDialog } = useGlobalDialog()
+			showDialog({
+				title: "模型加载失败",
+				message: `无法加载 Live2D 模型：${modelPath}\n\n请检查模型路径是否正确，或在设置中更换模型。`,
+				type: "error",
+			})
 		} finally {
 			isLoading.value = false
 		}
@@ -435,30 +444,77 @@ export function useLive2D() {
 		onModelClickCallbacks.push(callback)
 	}
 
+	function offModelClick(callback: () => void): void {
+		const index = onModelClickCallbacks.indexOf(callback)
+		if (index > -1) onModelClickCallbacks.splice(index, 1)
+	}
+
 	function onContainerClick(
 		callback: (x: number, y: number, isModelHit: boolean) => void,
 	): void {
 		onContainerClickCallbacks.push(callback)
 	}
 
+	function offContainerClick(
+		callback: (x: number, y: number, isModelHit: boolean) => void,
+	): void {
+		const index = onContainerClickCallbacks.indexOf(callback)
+		if (index > -1) onContainerClickCallbacks.splice(index, 1)
+	}
+
 	function onModelDoubleClick(callback: (hitArea: any) => void): void {
 		onModelDoubleClickCallbacks.push(callback)
+	}
+
+	function offModelDoubleClick(callback: (hitArea: any) => void): void {
+		const index = onModelDoubleClickCallbacks.indexOf(callback)
+		if (index > -1) onModelDoubleClickCallbacks.splice(index, 1)
 	}
 
 	function onModelHover(callback: (hitArea: any) => void): void {
 		onModelHoverCallbacks.push(callback)
 	}
 
+	function offModelHover(callback: (hitArea: any) => void): void {
+		const index = onModelHoverCallbacks.indexOf(callback)
+		if (index > -1) onModelHoverCallbacks.splice(index, 1)
+	}
+
 	function onMotionStart(callback: (group: string) => void): void {
 		onMotionStartCallbacks.push(callback)
+	}
+
+	function offMotionStart(callback: (group: string) => void): void {
+		const index = onMotionStartCallbacks.indexOf(callback)
+		if (index > -1) onMotionStartCallbacks.splice(index, 1)
 	}
 
 	function onMotionEnd(callback: (group: string) => void): void {
 		onMotionEndCallbacks.push(callback)
 	}
 
+	function offMotionEnd(callback: (group: string) => void): void {
+		const index = onMotionEndCallbacks.indexOf(callback)
+		if (index > -1) onMotionEndCallbacks.splice(index, 1)
+	}
+
 	function onExpressionChange(callback: (expression: string) => void): void {
 		onExpressionChangeCallbacks.push(callback)
+	}
+
+	function offExpressionChange(callback: (expression: string) => void): void {
+		const index = onExpressionChangeCallbacks.indexOf(callback)
+		if (index > -1) onExpressionChangeCallbacks.splice(index, 1)
+	}
+
+	function cleanupAllCallbacks(): void {
+		onModelClickCallbacks.length = 0
+		onModelDoubleClickCallbacks.length = 0
+		onModelHoverCallbacks.length = 0
+		onMotionStartCallbacks.length = 0
+		onMotionEndCallbacks.length = 0
+		onExpressionChangeCallbacks.length = 0
+		onContainerClickCallbacks.length = 0
 	}
 
 	function getCurrentState(): string {
@@ -605,6 +661,14 @@ export function useLive2D() {
 		onMotionStart,
 		onMotionEnd,
 		onExpressionChange,
+		offModelClick,
+		offContainerClick,
+		offModelDoubleClick,
+		offModelHover,
+		offMotionStart,
+		offMotionEnd,
+		offExpressionChange,
+		cleanupAllCallbacks,
 		getCurrentState,
 		getAvailableMotions,
 		getAvailableExpressions,

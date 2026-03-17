@@ -37,6 +37,9 @@ export class MouseInteractionHandler {
 	private currentHoverArea: HitArea | null = null
 
 	private pixelHitTest: PixelHitTest | null = null
+	private lastPickTime: number = 0
+	private lastPickResult: { x: number; y: number; result: HitArea | null } | null = null
+	private readonly THROTTLE_MS = 300
 
 	constructor(model: any, container: HTMLElement, pixiApp?: any) {
 		this.model = model
@@ -57,7 +60,6 @@ export class MouseInteractionHandler {
 					name: area.Name || area.name || "Unknown",
 					id: area.Id || area.id || "Unknown",
 				}))
-				console.log("[MouseInteraction] Loaded HitAreas:", this.hitAreas)
 			}
 		} catch (e) {
 			console.error("[MouseInteraction] Failed to load HitAreas:", e)
@@ -121,31 +123,35 @@ export class MouseInteractionHandler {
 			return null
 		}
 
-		console.log("[Debug MouseInteraction] Pixel check:", {
-			clientX: x,
-			clientY: y,
-			rectWidth: rect.width,
-			rectHeight: rect.height,
-		})
+		// Throttling: return cached result if within throttle window
+		const now = Date.now()
+		if (
+			this.lastPickResult &&
+			this.lastPickResult.x === x &&
+			this.lastPickResult.y === y &&
+			now - this.lastPickTime < this.THROTTLE_MS
+		) {
+			return this.lastPickResult.result
+		}
 
 		if (this.pixelHitTest) {
 			try {
 				const pixelResult = await this.pixelHitTest.checkHit(x, y)
-				console.log("[Debug MouseInteraction] Pixel result:", pixelResult)
 
-				if (pixelResult.isTransparent) {
-					console.log("[Debug MouseInteraction] Pixel is transparent, return null (should穿透)")
-					return null
-				}
+				const result = pixelResult.isTransparent
+					? null
+					: { name: "Body", id: "Body" }
 
-				console.log("[Debug MouseInteraction] Pixel is opaque, return Body (should not穿透)")
-				return { name: "Body", id: "Body" }
+				// Cache the result
+				this.lastPickTime = now
+				this.lastPickResult = { x, y, result }
+
+				return result
 			} catch (e) {
-				console.error("[Debug MouseInteraction] Pixel HitTest error:", e)
+				console.error("[MouseInteraction] Pixel HitTest error:", e)
 			}
 		}
 
-		console.log("[Debug MouseInteraction] No pixelHitTest, assume transparent")
 		return null
 	}
 

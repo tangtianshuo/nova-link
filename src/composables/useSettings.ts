@@ -1,5 +1,6 @@
 import { ref } from "vue"
 import { invoke } from "@tauri-apps/api/core"
+import { useGlobalDialog } from "./useGlobalDialog"
 
 export interface AppSettings {
 	modelPath: string
@@ -53,11 +54,22 @@ export function useSettings() {
 				settings.value = { ...defaultSettings, ...JSON.parse(saved) }
 			}
 		} catch (e) {
+			console.warn("[useSettings] Failed to load from Tauri, trying localStorage:", e)
 			const saved = localStorage.getItem("nova-link-settings")
 			if (saved) {
 				try {
 					settings.value = { ...defaultSettings, ...JSON.parse(saved) }
-				} catch {}
+				} catch {
+					// Both failed - show warning but use defaults
+					const { showDialog } = useGlobalDialog()
+					showDialog({
+						title: "设置加载警告",
+						message: "无法从磁盘加载设置，已使用默认配置。\n\n您的设置更改可能无法保存。",
+						type: "warning",
+					})
+				}
+			} else {
+				// No saved settings, use defaults - no need to warn
 			}
 		} finally {
 			isLoading.value = false

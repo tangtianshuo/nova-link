@@ -23,20 +23,10 @@ export class PixelHitTest {
 			const canvasX = Math.floor((x - rect.left) * (canvas.width / rect.width))
 			const canvasY = Math.floor((y - rect.top) * (canvas.height / rect.height))
 
-			console.log("[PixelHitTest] Checking pixel:", {
-				x,
-				y,
-				canvasX,
-				canvasY,
-				canvasWidth: canvas.width,
-				canvasHeight: canvas.height,
-			})
-
 			const renderer = this.app.renderer as PIXI.Renderer
 			const gl = renderer.gl
 
 			if (!gl) {
-				console.warn("[PixelHitTest] WebGL not available, assume transparent")
 				return { isTransparent: true, alpha: 0 }
 			}
 
@@ -57,14 +47,6 @@ export class PixelHitTest {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, prevFramebuffer)
 
 			const alpha = pixel[3] / 255
-
-			console.log("[PixelHitTest] Pixel color:", {
-				r: pixel[0],
-				g: pixel[1],
-				b: pixel[2],
-				a: pixel[3],
-				alpha,
-			})
 
 			const isTransparent = alpha < 0.1
 

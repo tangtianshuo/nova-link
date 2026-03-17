@@ -22,15 +22,10 @@ export class GPUHitTest {
 			const ndcX = ((x - rect.left) / rect.width) * 2 - 1
 			const ndcY = -((y - rect.top) / rect.height) * 2 + 1
 
-			console.log("[GPUHitTest] Pick at:", { x, y, ndcX, ndcY })
-
 			const internalModel = model.internalModel
 			const drawableInfo = this.getDrawableInfo(internalModel)
 
-			console.log("[GPUHitTest] Drawable info:", drawableInfo)
-
 			if (drawableInfo.count === 0) {
-				console.log("[GPUHitTest] No drawables found")
 				return null
 			}
 
@@ -38,7 +33,6 @@ export class GPUHitTest {
 				const bounds = this.getDrawableBounds(internalModel, i)
 				if (bounds && this.pointInBounds(ndcX, ndcY, bounds)) {
 					const name = this.getDrawableName(internalModel, i)
-					console.log("[GPUHitTest] Hit drawable:", { index: i, name, bounds })
 					return {
 						drawableIndex: i,
 						drawableName: name || `Part_${i}`,
@@ -46,7 +40,6 @@ export class GPUHitTest {
 				}
 			}
 
-			console.log("[GPUHitTest] No hit")
 			return null
 		} catch (e) {
 			console.error("[GPUHitTest] Error:", e)
