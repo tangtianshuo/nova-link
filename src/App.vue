@@ -9,6 +9,8 @@
 		useChat,
 		useWindow,
 		useClickThrough,
+		useSpeechBubble,
+		useEnvCheck,
 	} from "./composables"
 	import {
 		TitleBar,
@@ -17,6 +19,8 @@
 		CharacterSettingsModal,
 		ContextMenu,
 		Dialog,
+		SpeechBubble,
+		EnvironmentCheckModal,
 	} from "./components"
 	import { checkForUpdates } from "./utils/updater"
 
@@ -104,6 +108,15 @@
 		checkHitArea,
 	} = useLive2D()
 
+	// 气泡框
+	const {
+		visible: speechBubbleVisible,
+		content: speechBubbleContent,
+		duration: speechBubbleDuration,
+		show: showSpeechBubble,
+		hide: hideSpeechBubble,
+	} = useSpeechBubble()
+
 	// 可用的动画组列表
 	const availableMotions = ref<string[]>([])
 
@@ -175,6 +188,10 @@
 	const { handlePointerDown, handlePointerUp, handlePointerLeave } =
 		useClickThrough()
 
+	// 环境检测
+	const { showEnvCheckModal, checkAndShowModal, closeModal, onModalDone } =
+		useEnvCheck()
+
 	async function handlePointerDownForClickThrough(e: PointerEvent) {
 		const isModelHit = await checkHitArea(e.clientX, e.clientY)
 
@@ -220,7 +237,7 @@
 			app.style.backdropFilter = settings.value.bgBlur ? "blur(20px)" : "none"
 		}
 		if (chatPanel) {
-			chatPanel.style.background = `rgba(${hexToRgb(settings.value.bgColor)}, ${settings.value.bgOpacity * 0.8})`
+			chatPanel.style.background = `rgba(${hexToRgb(settings.value.bgColor)}, ${Math.min(1, settings.value.bgOpacity + 0.15)})`
 			chatPanel.style.backdropFilter = settings.value.bgBlur
 				? "blur(10px)"
 				: "none"
@@ -541,6 +558,11 @@
 			previewState(state)
 		})
 
+		// 启动时环境检测
+		setTimeout(() => {
+			checkAndShowModal()
+		}, 2000)
+
 		init().catch((e) => {
 			console.error("[App] init() failed:", e)
 		})
@@ -554,6 +576,12 @@
 			@close="handleAppClose"
 		/>
 		<Live2DContainer :has-model="hasModel" />
+		<SpeechBubble
+			:visible="speechBubbleVisible"
+			:content="speechBubbleContent"
+			:duration="speechBubbleDuration"
+			@hide="hideSpeechBubble"
+		/>
 		<ChatPanel
 			:visible="isChatVisible"
 			:messages="messages"
@@ -599,6 +627,12 @@
 			@close="handleDialogCancel"
 			@confirm="handleDialogConfirm"
 			@cancel="handleDialogCancel"
+		/>
+		<!-- 环境检测弹窗 -->
+		<EnvironmentCheckModal
+			:visible="showEnvCheckModal"
+			@close="closeModal"
+			@done="onModalDone"
 		/>
 	</div>
 </template>

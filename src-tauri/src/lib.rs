@@ -25,14 +25,28 @@ pub fn run() {
     builder
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
+            // Environment Check
+            commands::get_env_check_skipped,
+            commands::skip_env_check,
+            commands::check_node_env,
+            commands::install_node,
+            commands::check_openclaw_env,
+            commands::install_openclaw,
+            commands::check_openclaw_init,
+            commands::run_openclaw_onboard,
+            commands::get_env_status,
+            commands::open_manual_install_node,
+            // Chat
             commands::chat_with_llm,
             commands::update_llm_config,
+            // Window
             commands::set_window_size,
             commands::get_window_size,
             commands::set_default_window_size,
             commands::has_window_state,
             commands::set_click_through,
             commands::is_click_through_enabled,
+            // Settings
             commands::save_setting,
             commands::get_setting,
             commands::gateway::run_gateway,

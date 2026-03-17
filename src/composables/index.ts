@@ -15,3 +15,8 @@ export { useGlobalDialog } from "./useGlobalDialog"
 
 export { useClickThrough } from "./useClickThrough"
 export type { ClickThroughOptions } from "./useClickThrough"
+
+export { useSpeechBubble } from "./useSpeechBubble"
+
+export { useEnvCheck } from "./useEnvCheck"
+export type { EnvStatus, NodeStatus, OpenClawStatus } from "./useEnvCheck"
