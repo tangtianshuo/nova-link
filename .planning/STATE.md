@@ -13,7 +13,7 @@ See: .planning/PROJECT.md
 
 | Phase | Status | Plans |
 |-------|--------|-------|
-| 1 | Pending | 0 |
+| 1 | Planned | 1 |
 
 ## Recent Activity
 
