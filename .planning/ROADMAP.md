@@ -1,7 +1,7 @@
 # Roadmap: Nova Link
 
 **Created:** 2026-03-17
-**Current Focus:** Phase 3: SQLite聊天历史存储
+**Current Focus:** Phase 3 Complete - All v1.0 requirements fulfilled
 
 ## Phase Overview
 
@@ -9,7 +9,7 @@
 |---|-------|------|--------------|--------|
 | 1 | 首次使用引导 | Complete | 12 | Completed |
 | 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | Complete | 6 | Completed |
-| 3 | SQLite聊天历史存储 | In Progress | 5 | Planned |
+| 3 | SQLite聊天历史存储 | Complete | 5 | Completed |
 
 ## Phase 1: 首次使用引导
 
@@ -84,14 +84,14 @@ Plans:
 - SQLITE-05: 保留 JSON 降级方案
 
 **Success Criteria:**
-- [ ] 聊天历史使用 SQLite 存储
-- [ ] 现有 JSON 数据平滑迁移
-- [ ] 查询性能提升
+- [x] 聊天历史使用 SQLite 存储
+- [x] 现有 JSON 数据平滑迁移
+- [x] 查询性能提升 (索引优化)
 
-**Plans:** 1 plan
+**Plans:** 1/1 plan complete
 
 Plans:
-- [ ] 03-01-PLAN.md — SQLite依赖、数据库操作、前端集成
+- [x] 03-01-PLAN.md — SQLite依赖、数据库操作、前端集成 [COMPLETED]
 
 ---
 
