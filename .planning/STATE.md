@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-18T07:26:00.000Z"
+last_updated: "2026-03-18T07:40:00.000Z"
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
-current_plan: "02-01"
+  completed_plans: 3
+current_plan: "02-02"
 ---
 
 # State: Nova Link
@@ -61,6 +61,7 @@ See: .planning/PROJECT.md
 - 2026-03-18: 添加 Phase 2 - 桌面集成功能规划
 - 2026-03-18: Phase 2 规划完成，3个计划创建
 - 2026-03-18: 完成 Plan 02-01 - Tauri系统集成插件
+- 2026-03-18: 完成 Plan 02-02 - 聊天历史持久化
 
 ## Decisions Made
 
@@ -74,6 +75,7 @@ See: .planning/PROJECT.md
 - HOTKEY-01: 全局快捷键 - 唤起对话
 - HOTKEY-02: 快捷操作 - 隐藏/显示窗口
 - NOTIFY-01: Windows通知
+- HISTORY-01: 聊天历史持久化
 
 ---
 
