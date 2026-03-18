@@ -19,3 +19,5 @@ export { useEnvCheck } from "./useEnvCheck"
 export type { EnvStatus, NodeStatus, OpenClawStatus } from "./useEnvCheck"
 
 export { useOnboarding } from "./useOnboarding"
+
+export { useChatHistory } from "./useChatHistory"
