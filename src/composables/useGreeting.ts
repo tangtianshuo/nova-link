@@ -70,9 +70,9 @@ export function useGreeting() {
       // Once per day: check if target time reached and hasn't triggered today
       return currentTime >= config.value.time && lastTriggerDate !== today
     } else {
-      // Hourly: check if target minute reached and hasn't triggered this hour
+      // Hourly: check if current hour matches and same minute prefix, hasn't triggered this hour
       const currentHour = now.getHours()
-      const [targetHour, targetMinute] = config.value.time.split(':').map(Number)
+      const [targetHour] = config.value.time.split(':').map(Number)
       return currentHour === targetHour && currentTime.startsWith(config.value.time.slice(0, 3)) && lastTriggerDate !== `${today}-${currentHour}`
     }
   }
