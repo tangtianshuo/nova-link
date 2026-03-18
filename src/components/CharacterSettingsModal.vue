@@ -2,7 +2,7 @@
 	import { ref, reactive, onMounted, onUnmounted, watch, computed } from "vue"
 	import { getCurrentWindow } from "@tauri-apps/api/window"
 	import { invoke } from "@tauri-apps/api/core"
-	import { useSettings, type AppSettings } from "../composables"
+	import { useSettings, type AppSettings, useGreeting, type GreetingConfig } from "../composables"
 	const props = defineProps<{
 		visible: boolean
 		wsStatus?: string
@@ -95,6 +95,9 @@
 	// 窗口尺寸独立管理
 	const windowSize = reactive({ width: 400, height: 500 })
 
+	// 定时问候设置
+	const { config: greetingConfig, updateConfig: updateGreeting, loadConfig: loadGreetingConfig } = useGreeting()
+
 	// ============ 数据加载 ============
 
 	async function loadAllData() {
@@ -145,6 +148,8 @@
 			windowSize.height = currentSize.height
 			// 加载其他应用设置
 			Object.assign(localSettings, settings.value)
+			// 加载定时问候设置
+			await loadGreetingConfig()
 		} catch (e) {
 			console.error("Failed to load data:", e)
 		} finally {
@@ -871,6 +876,56 @@
 									</div>
 								</div>
 
+								<!-- 定时问候设置 -->
+								<div class="greeting-settings">
+									<h4>定时问候</h4>
+									<div class="form-grid">
+										<div class="form-group full-width">
+											<label class="switch-label">
+												<input
+													type="checkbox"
+													:checked="greetingConfig.enabled"
+													@change="updateGreeting({ enabled: ($event.target as HTMLInputElement).checked })"
+												/>
+												<span class="switch-text">启用定时问候</span>
+											</label>
+										</div>
+										<template v-if="greetingConfig.enabled">
+											<div class="form-group">
+												<label>提醒时间</label>
+												<select
+													:value="greetingConfig.time"
+													@change="updateGreeting({ time: ($event.target as HTMLSelectElement).value })"
+												>
+													<option value="09:00">09:00 早上</option>
+													<option value="12:00">12:00 中午</option>
+													<option value="18:00">18:00 傍晚</option>
+													<option value="21:00">21:00 晚上</option>
+												</select>
+											</div>
+											<div class="form-group">
+												<label>提醒频率</label>
+												<select
+													:value="greetingConfig.interval"
+													@change="updateGreeting({ interval: ($event.target as HTMLSelectElement).value as 'daily' | 'hourly' })"
+												>
+													<option value="daily">每天</option>
+													<option value="hourly">每小时</option>
+												</select>
+											</div>
+											<div class="form-group full-width">
+												<label>问候消息</label>
+												<textarea
+													:value="greetingConfig.message"
+													@input="updateGreeting({ message: ($event.target as HTMLTextAreaElement).value })"
+													placeholder="输入问候消息..."
+													rows="3"
+												></textarea>
+											</div>
+										</template>
+									</div>
+								</div>
+
 								<!-- 重置引导按钮 -->
 								<div class="reset-onboarding-section">
 									<button
@@ -1374,6 +1429,55 @@
 		margin: 0 0 16px;
 		font-size: 14px;
 		color: #94a3b8;
+	}
+
+	/* 定时问候设置 */
+	.greeting-settings {
+		margin-top: 20px;
+		padding-top: 20px;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.greeting-settings h4 {
+		margin: 0 0 16px;
+		font-size: 14px;
+		color: #94a3b8;
+	}
+
+	.switch-label {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		cursor: pointer;
+	}
+
+	.switch-label input[type="checkbox"] {
+		width: 20px;
+		height: 20px;
+		accent-color: #22d3ee;
+		cursor: pointer;
+	}
+
+	.switch-text {
+		font-size: 14px;
+		color: #e2e8f0;
+	}
+
+	.greeting-settings textarea {
+		width: 100%;
+		padding: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 8px;
+		background: rgba(0, 0, 0, 0.3);
+		color: #e2e8f0;
+		font-size: 13px;
+		resize: vertical;
+		transition: all 0.2s;
+	}
+
+	.greeting-settings textarea:focus {
+		outline: none;
+		border-color: rgba(56, 189, 248, 0.5);
 	}
 
 	/* 底部操作栏 */
