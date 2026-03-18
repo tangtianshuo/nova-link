@@ -94,6 +94,11 @@ pub fn run() {
                 println!("[ERROR] Failed to initialize config files: {}", e);
             }
 
+            // 迁移现有 JSON 聊天历史到 SQLite
+            if let Err(e) = config::migrate_json_to_sqlite() {
+                println!("[WARN] Failed to migrate chat history to SQLite: {}", e);
+            }
+
             // 首次启动时根据屏幕尺寸计算窗口大小
             // 如果之前有保存的状态，会被 has_window_state() 检测到并恢复
             let has_saved_state = config::has_window_state();
