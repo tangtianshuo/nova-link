@@ -81,6 +81,10 @@ pub fn run() {
             // Hotkey
             commands::register_global_shortcut,
             commands::unregister_global_shortcut,
+            // Chat History
+            commands::save_chat_history_cmd,
+            commands::load_chat_history_cmd,
+            commands::clear_chat_history,
         ])
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");

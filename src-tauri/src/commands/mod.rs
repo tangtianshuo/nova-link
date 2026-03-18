@@ -1,4 +1,5 @@
 pub mod autostart;
+pub mod chat_history;
 pub mod env_check;
 pub mod gateway;
 pub mod hotkey;
@@ -11,6 +12,7 @@ pub mod user;
 pub mod window;
 
 pub use autostart::*;
+pub use chat_history::*;
 pub use env_check::*;
 pub use hotkey::*;
 pub use identity::*;

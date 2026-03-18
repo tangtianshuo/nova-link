@@ -379,6 +379,39 @@ pub fn has_window_state() -> bool {
     load_window_state().map(|s| s.is_some()).unwrap_or(false)
 }
 
+// ============ Chat History ============
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChatHistory {
+    pub messages: Vec<ChatMessage>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChatMessage {
+    pub msg_type: String,
+    pub content: String,
+    pub timestamp: i64,
+}
+
+pub fn get_chat_history_path() -> std::path::PathBuf {
+    get_config_dir().join("chat_history.json")
+}
+
+pub fn load_chat_history() -> Result<ChatHistory, String> {
+    let path = get_chat_history_path();
+    if !path.exists() {
+        return Ok(ChatHistory { messages: vec![] });
+    }
+    let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&content).map_err(|e| e.to_string())
+}
+
+pub fn save_chat_history(history: &ChatHistory) -> Result<(), String> {
+    let path = get_chat_history_path();
+    let content = serde_json::to_string_pretty(history).map_err(|e| e.to_string())?;
+    std::fs::write(&path, content).map_err(|e| e.to_string())
+}
+
 // ============ 配置初始化 ============
 
 /// 初始化所有配置文件（首次安装时调用）
