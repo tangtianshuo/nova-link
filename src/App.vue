@@ -12,6 +12,7 @@
 		useEnvCheck,
 		useOnboarding,
 		useChatHistory,
+		useGreeting,
 	} from "./composables"
 	import {
 		TitleBar,
@@ -182,6 +183,9 @@
 		stopStreaming,
 	} = useChat()
 
+	// Scheduled greeting
+	const { init: initGreeting } = useGreeting()
+
 	// Chat history persistence
 	const { loadHistory: loadChatHistory, saveHistory: saveChatHistory } = useChatHistory()
 	const {
@@ -293,6 +297,12 @@
 	async function init() {
 		await loadSettings()
 		applyBackground()
+
+		// Initialize scheduled greeting
+		initGreeting((message: string) => {
+			// Add greeting message to chat
+			addMessage('bot', message)
+		})
 
 		// 检查是否需要显示首次使用引导
 		const shouldShowOnboarding = await checkOnboardingStatus()
