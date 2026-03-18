@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, reactive, onMounted, watch, nextTick, onErrorCaptured } from "vue"
+	import { ref, reactive, onMounted, onUnmounted, watch, nextTick, onErrorCaptured } from "vue"
 	import { listen } from "@tauri-apps/api/event"
 	import { invoke } from "@tauri-apps/api/core"
 	import {
@@ -11,6 +11,7 @@
 		useSpeechBubble,
 		useEnvCheck,
 		useOnboarding,
+		useChatHistory,
 	} from "./composables"
 	import {
 		TitleBar,
@@ -180,6 +181,9 @@
 		startThinking,
 		stopStreaming,
 	} = useChat()
+
+	// Chat history persistence
+	const { loadHistory: loadChatHistory, saveHistory: saveChatHistory } = useChatHistory()
 	const {
 		toggleAlwaysOnTop,
 		minimizeWindow,
@@ -512,6 +516,22 @@
 		showContextMenu.value = false
 	}
 
+	async function handleClearChatHistory() {
+		const confirmed = await showGlobalConfirm({
+			message: '确定要清除所有聊天历史吗？此操作不可撤销。',
+			title: '清除聊天历史',
+			type: 'warning',
+		})
+		if (confirmed) {
+			// Clear history from storage
+			const { clearHistory } = useChatHistory()
+			await clearHistory()
+			// Clear messages in UI
+			messages.value = []
+		}
+		showContextMenu.value = false
+	}
+
 	async function handleRunGateway() {
 		try {
 			await import("@tauri-apps/api/core")
@@ -531,6 +551,20 @@
 		// 只隐藏窗口，不销毁 Live2D（从托盘恢复时需要）
 		await closeAppWindow()
 	}
+
+	// Auto-save chat history with debounce
+	let saveTimeout: number | null = null
+	watch(messages, async (newMessages) => {
+		if (saveTimeout) clearTimeout(saveTimeout)
+		saveTimeout = window.setTimeout(() => {
+			const historyMessages = newMessages.map((msg) => ({
+				msg_type: msg.type,
+				content: msg.content,
+				timestamp: Date.now(),
+			}))
+			saveChatHistory(historyMessages)
+		}, 2000) // 2 second debounce
+	}, { deep: true })
 
 	// 监听聊天面板打开，加载历史记录
 	watch(isChatVisible, async (show) => {
@@ -627,6 +661,26 @@
 		init().catch((e) => {
 			console.error("[App] init() failed:", e)
 		})
+
+		// Load chat history on startup
+		loadChatHistory().then((history) => {
+			if (history.length > 0) {
+				// Convert history messages to current format
+				for (const msg of history) {
+					addMessage(msg.msg_type, msg.content)
+				}
+			}
+		})
+	})
+
+	// Save chat history on app close
+	onUnmounted(async () => {
+		const historyMessages = messages.value.map((msg) => ({
+			msg_type: msg.type,
+			content: msg.content,
+			timestamp: Date.now(),
+		}))
+		await saveChatHistory(historyMessages)
 	})
 </script>
 
@@ -676,6 +730,7 @@
 			@reset-to-idle="handleResetToIdle"
 			@run-gateway="handleRunGateway"
 			@reconnect-ws="handleReconnectWs"
+			@clear-chat-history="handleClearChatHistory"
 		/>
 		<!-- 全局 Dialog -->
 		<Dialog

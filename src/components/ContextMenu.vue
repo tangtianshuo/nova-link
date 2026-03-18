@@ -54,6 +54,7 @@ const emit = defineEmits<{
   resetToIdle: []
   runGateway: []
   reconnectWs: []
+  clearChatHistory: []
 }>()
 
 // 开发环境标识
@@ -125,6 +126,9 @@ function handleClick(item: string) {
       break
     case "reconnectWs":
       emit("reconnectWs")
+      break
+    case "clearChatHistory":
+      emit("clearChatHistory")
       break
   }
   emit("close")
@@ -237,6 +241,12 @@ onUnmounted(() => {
         @click="handleClick('close')"
       >
         关闭
+      </div>
+      <div
+        class="menu-item"
+        @click="handleClick('clearChatHistory')"
+      >
+        清除聊天历史
       </div>
 
       <!-- 启动 Gateway 和 Debug (仅开发环境显示) -->
