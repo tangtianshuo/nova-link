@@ -1,14 +1,14 @@
 # Roadmap: Nova Link
 
 **Created:** 2026-03-17
-**Current Focus:** Phase 2: 桌面集成 (开机自启/快捷键/通知/历史/定时问候)
+**Current Focus:** Phase 2: 桌面集成 (已完成)
 
 ## Phase Overview
 
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
 | 1 | 首次使用引导 | Complete | 12 | Completed |
-| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | 实现第一阶段(v0.1.0)功能 | 6 | In Progress |
+| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | 实现第一阶段(v0.1.0)功能 | 6 | Completed |
 
 ## Phase 1: 首次使用引导
 
@@ -56,20 +56,20 @@ Plans:
 - GREETING-01: 定时问候 - 主动发送消息
 
 **Success Criteria:**
-- [ ] 应用开机自动启动
-- [ ] 全局快捷键可唤起对话
-- [ ] 收到重要消息时有系统通知
-- [ ] 关闭应用后历史对话可恢复
-- [ ] 用户可设置定时提醒/问候
+- [x] 应用开机自动启动
+- [x] 全局快捷键可唤起对话
+- [x] 收到重要消息时有系统通知
+- [x] 关闭应用后历史对话可恢复
+- [x] 用户可设置定时提醒/问候
 
-**Plans:** 3 plans
+**Plans:** 3 plans (Completed)
 
 Plans:
 - [x] 02-01-PLAN.md — Tauri系统集成插件 (autostart/global-shortcut/notification) [COMPLETED]
-- [ ] 02-02-PLAN.md — 聊天历史持久化 (JSON存储)
-- [ ] 02-03-PLAN.md — 定时问候功能 (定时发送消息)
+- [x] 02-02-PLAN.md — 聊天历史持久化 (JSON存储) [COMPLETED]
+- [x] 02-03-PLAN.md — 定时问候功能 (定时发送消息) [COMPLETED]
 
 ---
 
 *Roadmap created: 2026-03-17*
-*Last updated: 2026-03-18T07:26:00Z*
+*Last updated: 2026-03-18T07:45:00Z*
