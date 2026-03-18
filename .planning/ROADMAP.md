@@ -1,14 +1,15 @@
 # Roadmap: Nova Link
 
 **Created:** 2026-03-17
-**Current Focus:** Phase 2: 桌面集成 (已完成)
+**Current Focus:** Phase 3: SQLite聊天历史存储
 
 ## Phase Overview
 
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
 | 1 | 首次使用引导 | Complete | 12 | Completed |
-| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | Complete    | 2026-03-18 | Completed |
+| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | Complete | 6 | Completed |
+| 3 | SQLite聊天历史存储 | - | - | Not Planned |
 
 ## Phase 1: 首次使用引导
 
@@ -68,6 +69,29 @@ Plans:
 - [x] 02-01-PLAN.md — Tauri系统集成插件 (autostart/global-shortcut/notification) [COMPLETED]
 - [x] 02-02-PLAN.md — 聊天历史持久化 (JSON存储) [COMPLETED]
 - [x] 02-03-PLAN.md — 定时问候功能 (定时发送消息) [COMPLETED]
+
+---
+
+## Phase 3: SQLite聊天历史存储
+
+**Goal:** 将聊天历史存储从 JSON 改为 SQLite，提升性能和可扩展性
+
+**Requirements:**
+- SQLITE-01: 添加 SQLite 依赖 (rusqlite)
+- SQLITE-02: 创建数据库表结构 (messages, conversations)
+- SQLITE-03: 迁移现有 JSON 数据到 SQLite
+- SQLITE-04: 更新前端 useChatHistory composable
+- SQLITE-05: 保留 JSON 降级方案
+
+**Success Criteria:**
+- [ ] 聊天历史使用 SQLite 存储
+- [ ] 现有 JSON 数据平滑迁移
+- [ ] 查询性能提升
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 3 to break down)
 
 ---
 
