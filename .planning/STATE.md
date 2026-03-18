@@ -62,6 +62,10 @@ See: .planning/PROJECT.md
 - 2026-03-18: 添加 Phase 3 - SQLite聊天历史存储
 - 2026-03-18: 完成 Plan 03-01 - SQLite聊天历史存储
 
+## Pending Todos
+
+- 快捷键自定义设置 (ui, created 2026-03-18)
+
 ## Completed Requirements
 
 - AUTO-01: 开机自启
