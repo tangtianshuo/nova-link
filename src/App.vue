@@ -1,5 +1,13 @@
 <script setup lang="ts">
-	import { ref, reactive, onMounted, onUnmounted, watch, nextTick, onErrorCaptured } from "vue"
+	import {
+		ref,
+		reactive,
+		onMounted,
+		onUnmounted,
+		watch,
+		nextTick,
+		onErrorCaptured,
+	} from "vue"
 	import { listen } from "@tauri-apps/api/event"
 	import { invoke } from "@tauri-apps/api/core"
 	import {
@@ -26,6 +34,13 @@
 		OnboardingGuide,
 	} from "./components"
 	import { checkForUpdates } from "./utils/updater"
+	import {
+		startMonitoring,
+		stopMonitoring,
+		listenForWindowChanges,
+		AppType,
+		type ActiveWindowInfo,
+	} from "./utils/windowMonitor"
 
 	const { settings, loadSettings } = useSettings()
 
@@ -187,7 +202,8 @@
 	const { init: initGreeting } = useGreeting()
 
 	// Chat history persistence
-	const { loadHistory: loadChatHistory, saveHistory: saveChatHistory } = useChatHistory()
+	const { loadHistory: loadChatHistory, saveHistory: saveChatHistory } =
+		useChatHistory()
 	const {
 		toggleAlwaysOnTop,
 		minimizeWindow,
@@ -200,11 +216,8 @@
 
 	// 首次使用引导
 	const showOnboarding = ref(false)
-	const {
-		checkOnboardingStatus,
-		markOnboardingSeen,
-		resetOnboarding,
-	} = useOnboarding()
+	const { checkOnboardingStatus, markOnboardingSeen, resetOnboarding } =
+		useOnboarding()
 
 	// 显示引导
 	async function showOnboardingGuide() {
@@ -248,7 +261,9 @@
 				toggleChat(true)
 				// 聚焦输入框
 				nextTick(() => {
-					const inputEl = document.getElementById("message-input") as HTMLInputElement
+					const inputEl = document.getElementById(
+						"message-input",
+					) as HTMLInputElement
 					inputEl?.focus()
 				})
 				return
@@ -256,7 +271,9 @@
 		}
 
 		// 检查是否点击了模型
-		const isModelHit = hasModel.value ? await checkHitArea(e.clientX, e.clientY) : false
+		const isModelHit = hasModel.value
+			? await checkHitArea(e.clientX, e.clientY)
+			: false
 
 		if (isModelHit) {
 			// 点击了模型，触发动画
@@ -301,7 +318,7 @@
 		// Initialize scheduled greeting
 		initGreeting((message: string) => {
 			// Add greeting message to chat
-			addMessage('bot', message)
+			addMessage("bot", message)
 		})
 
 		// 检查是否需要显示首次使用引导
@@ -528,9 +545,9 @@
 
 	async function handleClearChatHistory() {
 		const confirmed = await showGlobalConfirm({
-			message: '确定要清除所有聊天历史吗？此操作不可撤销。',
-			title: '清除聊天历史',
-			type: 'warning',
+			message: "确定要清除所有聊天历史吗？此操作不可撤销。",
+			title: "清除聊天历史",
+			type: "warning",
 		})
 		if (confirmed) {
 			// Clear history from storage
@@ -564,17 +581,21 @@
 
 	// Auto-save chat history with debounce
 	let saveTimeout: number | null = null
-	watch(messages, async (newMessages) => {
-		if (saveTimeout) clearTimeout(saveTimeout)
-		saveTimeout = window.setTimeout(() => {
-			const historyMessages = newMessages.map((msg) => ({
-				msg_type: msg.type,
-				content: msg.content,
-				timestamp: Date.now(),
-			}))
-			saveChatHistory(historyMessages)
-		}, 2000) // 2 second debounce
-	}, { deep: true })
+	watch(
+		messages,
+		async (newMessages) => {
+			if (saveTimeout) clearTimeout(saveTimeout)
+			saveTimeout = window.setTimeout(() => {
+				const historyMessages = newMessages.map((msg) => ({
+					msg_type: msg.type,
+					content: msg.content,
+					timestamp: Date.now(),
+				}))
+				saveChatHistory(historyMessages)
+			}, 2000) // 2 second debounce
+		},
+		{ deep: true },
+	)
 
 	// 监听聊天面板打开，加载历史记录
 	watch(isChatVisible, async (show) => {
@@ -663,6 +684,52 @@
 			previewState(state)
 		})
 
+		// Window Monitoring
+		try {
+			await startMonitoring()
+			await listenForWindowChanges((info: ActiveWindowInfo) => {
+				console.log("[WindowMonitor] Active window changed:", info)
+				
+				// Map AppType to Live2D Motions
+				let motion = ""
+				switch (info.app_type) {
+					case AppType.Coding:
+						motion = "Tap" // Simulate typing
+						break
+					case AppType.Browsing:
+						motion = "Flick" // Simulate scrolling/swiping
+						break
+					case AppType.Media:
+						motion = "FlickUp" // Enjoying music/video
+						break
+					case AppType.Communication:
+						motion = "Tap@Body" // Interaction
+						break
+					case AppType.Gaming:
+						motion = "FlickDown" // Intense gaming
+						break
+					case AppType.System:
+					case AppType.Unknown:
+					default:
+						motion = "Idle"
+						break
+				}
+				
+				if (motion && motion !== "Idle") {
+					// Use previewMotion to play the specific motion
+					// Adding a small delay to ensure it doesn't conflict with other states
+					setTimeout(() => {
+						previewMotion(motion)
+					}, 500)
+				} else {
+					// For Idle, we might want to reset
+					resetToIdle()
+				}
+			})
+		} catch (e) {
+			console.error("[WindowMonitor] Failed to init:", e)
+		}
+
 		// 启动时环境检测
 		setTimeout(() => {
 			checkAndShowModal()
@@ -685,6 +752,7 @@
 
 	// Save chat history on app close
 	onUnmounted(async () => {
+		await stopMonitoring()
 		const historyMessages = messages.value.map((msg) => ({
 			msg_type: msg.type,
 			content: msg.content,

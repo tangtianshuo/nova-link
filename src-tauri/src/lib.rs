@@ -30,6 +30,7 @@ pub fn run() {
 
     builder
         .manage(AppState::default())
+        .manage(commands::window_monitor::WindowMonitorState::default())
         .invoke_handler(tauri::generate_handler![
             // Environment Check
             commands::get_env_check_skipped,
@@ -85,6 +86,13 @@ pub fn run() {
             commands::save_chat_history_cmd,
             commands::load_chat_history_cmd,
             commands::clear_chat_history,
+            // Window Monitor
+            commands::window_monitor::start_monitoring,
+            commands::window_monitor::stop_monitoring,
+            commands::window_monitor::get_active_window_info,
+            commands::window_monitor::capture_screen,
+            commands::window_monitor::simulate_typing,
+            commands::window_monitor::simulate_key,
         ])
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");

@@ -38,6 +38,11 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-notification = "2"
 rusqlite = { version = "0.32", features = ["bundled"] }
 thiserror = "2"
+active-win-pos-rs = "0.10.0"
+screenshots = "0.8.10"
+enigo = "0.6.1"
+base64 = "0.22.1"
+image = "0.25.10"
 
 [profile.release]
 strip = true
