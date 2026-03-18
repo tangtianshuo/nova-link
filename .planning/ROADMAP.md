@@ -9,7 +9,7 @@
 |---|-------|------|--------------|--------|
 | 1 | 首次使用引导 | Complete | 12 | Completed |
 | 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | Complete | 6 | Completed |
-| 3 | SQLite聊天历史存储 | Complete | 5 | Completed |
+| 3 | SQLite聊天历史存储 | Complete    | 2026-03-18 | Completed |
 
 ## Phase 1: 首次使用引导
 
@@ -88,7 +88,7 @@ Plans:
 - [x] 现有 JSON 数据平滑迁移
 - [x] 查询性能提升 (索引优化)
 
-**Plans:** 1/1 plan complete
+**Plans:** 1/1 plans complete
 
 Plans:
 - [x] 03-01-PLAN.md — SQLite依赖、数据库操作、前端集成 [COMPLETED]
