@@ -1,5 +1,5 @@
 export { useSettings } from "./useSettings"
-export type { AppSettings } from "./useSettings"
+export type { AppSettings, HotkeySetting } from "./useSettings"
 
 export { useWindow } from "./useWindow"
 

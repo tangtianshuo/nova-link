@@ -2,6 +2,12 @@ import { ref } from "vue"
 import { invoke } from "@tauri-apps/api/core"
 import { useGlobalDialog } from "./useGlobalDialog"
 
+export interface HotkeySetting {
+	shortcut: string
+	action: "toggle_chat" | "toggle_window" | "switch_model"
+	enabled: boolean
+}
+
 export interface AppSettings {
 	modelPath: string
 	wsUrl: string
@@ -19,6 +25,7 @@ export interface AppSettings {
 	windowHeight?: number
 	windowX?: number
 	windowY?: number
+	hotkeys: HotkeySetting[]
 }
 
 const DEFAULT_MODEL_PATH =
@@ -37,6 +44,10 @@ const defaultSettings: AppSettings = {
 	bgColor: "#1e293b",
 	bgOpacity: 0.2,
 	bgBlur: true,
+	hotkeys: [
+		{ shortcut: "Ctrl+Shift+N", action: "toggle_chat", enabled: true },
+		{ shortcut: "Ctrl+Shift+H", action: "toggle_window", enabled: true },
+	],
 }
 
 const settings = ref<AppSettings>({ ...defaultSettings })

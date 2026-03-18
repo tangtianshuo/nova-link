@@ -2,7 +2,7 @@
 	import { ref, reactive, onMounted, onUnmounted, watch, computed } from "vue"
 	import { getCurrentWindow } from "@tauri-apps/api/window"
 	import { invoke } from "@tauri-apps/api/core"
-	import { useSettings, type AppSettings, useGreeting, type GreetingConfig } from "../composables"
+	import { useSettings, type AppSettings, type HotkeySetting, useGreeting, type GreetingConfig } from "../composables"
 	const props = defineProps<{
 		visible: boolean
 		wsStatus?: string
@@ -98,6 +98,61 @@
 	// 定时问候设置
 	const { config: greetingConfig, updateConfig: updateGreeting, loadConfig: loadGreetingConfig } = useGreeting()
 
+	// 快捷键设置
+	const hotkeySettings = ref<HotkeySetting[]>([])
+
+	function getHotkeyActionLabel(action: string): string {
+		const labels: Record<string, string> = {
+			toggle_chat: "切换聊天面板",
+			toggle_window: "显示/隐藏窗口",
+			switch_model: "切换模型",
+		}
+		return labels[action] || action
+	}
+
+	async function loadHotkeySettings() {
+		hotkeySettings.value = settings.value.hotkeys || [
+			{ shortcut: "Ctrl+Shift+N", action: "toggle_chat", enabled: true },
+			{ shortcut: "Ctrl+Shift+H", action: "toggle_window", enabled: true },
+		]
+	}
+
+	function updateHotkey(index: number, field: keyof HotkeySetting, value: string | boolean) {
+		hotkeySettings.value[index] = { ...hotkeySettings.value[index], [field]: value }
+	}
+
+	// 快捷键录制状态
+	const recordingIndex = ref<number | null>(null)
+
+	function startRecording(index: number) {
+		recordingIndex.value = index
+	}
+
+	function handleKeyDown(event: KeyboardEvent) {
+		if (recordingIndex.value === null) return
+		event.preventDefault()
+
+		const parts: string[] = []
+		if (event.ctrlKey) parts.push("Ctrl")
+		if (event.shiftKey) parts.push("Shift")
+		if (event.altKey) parts.push("Alt")
+		if (event.metaKey) parts.push("Meta")
+
+		const key = event.key
+		if (!["Control", "Shift", "Alt", "Meta"].includes(key)) {
+			parts.push(key.length === 1 ? key.toUpperCase() : key)
+		}
+
+		if (parts.length > 0) {
+			hotkeySettings.value[recordingIndex.value].shortcut = parts.join("+")
+		}
+		recordingIndex.value = null
+	}
+
+	function cancelRecording() {
+		recordingIndex.value = null
+	}
+
 	// ============ 数据加载 ============
 
 	async function loadAllData() {
@@ -150,6 +205,8 @@
 			Object.assign(localSettings, settings.value)
 			// 加载定时问候设置
 			await loadGreetingConfig()
+			// 加载快捷键设置
+			await loadHotkeySettings()
 		} catch (e) {
 			console.error("Failed to load data:", e)
 		} finally {
@@ -328,6 +385,12 @@
 				height: Math.max(400, windowSize.height),
 			})
 
+			// 保存快捷键设置并刷新
+			settings.value.hotkeys = hotkeySettings.value
+			await saveSettings()
+			// 刷新全局快捷键
+			window.dispatchEvent(new CustomEvent('refresh-hotkeys'))
+
 			// 如果有 OpenClaw 相关的警告，显示给用户
 			if (saveWarnings.value.length > 0) {
 				gShowDialog({
@@ -423,11 +486,14 @@
 		}
 		// 监听窗口大小变化
 		window.addEventListener("resize", updateParentWindowSize)
+		// 监听键盘事件用于快捷键录制
+		window.addEventListener("keydown", handleKeyDown)
 	})
 
 	// 组件卸载时移除监听
 	onUnmounted(() => {
 		window.removeEventListener("resize", updateParentWindowSize)
+		window.removeEventListener("keydown", handleKeyDown)
 	})
 </script>
 
@@ -924,6 +990,46 @@
 											</div>
 										</template>
 									</div>
+								</div>
+
+								<!-- 快捷键设置 -->
+								<div class="hotkey-settings">
+									<h4>快捷键设置</h4>
+									<p class="section-hint">点击快捷键按钮，然后按下新的快捷键组合</p>
+									<div class="hotkey-list">
+										<div
+											v-for="(hotkey, index) in hotkeySettings"
+											:key="index"
+											class="hotkey-item"
+										>
+											<div class="hotkey-action">
+												{{ getHotkeyActionLabel(hotkey.action) }}
+											</div>
+											<div class="hotkey-controls">
+												<button
+													class="hotkey-btn"
+													:class="{ recording: recordingIndex === index }"
+													@click="startRecording(index)"
+												>
+													{{ recordingIndex === index ? "按键中..." : hotkey.shortcut }}
+												</button>
+												<label class="switch-label">
+													<input
+														type="checkbox"
+														:checked="hotkey.enabled"
+														@change="updateHotkey(index, 'enabled', ($event.target as HTMLInputElement).checked)"
+													/>
+												</label>
+											</div>
+										</div>
+									</div>
+									<button
+										v-if="recordingIndex !== null"
+										class="cancel-record-btn"
+										@click="cancelRecording"
+									>
+										取消
+									</button>
 								</div>
 
 								<!-- 重置引导按钮 -->
@@ -1721,5 +1827,85 @@
 	.btn-mcp-copy:hover {
 		background: rgba(59, 130, 246, 0.3);
 		border-color: rgba(59, 130, 246, 0.5);
+	}
+
+	/* 快捷键设置 */
+	.hotkey-settings {
+		margin-top: 20px;
+		padding-top: 20px;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.hotkey-settings h4 {
+		margin: 0 0 12px;
+		font-size: 14px;
+		color: #94a3b8;
+	}
+
+	.hotkey-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.hotkey-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 12px;
+		background: rgba(0, 0, 0, 0.2);
+		border-radius: 8px;
+		border: 1px solid rgba(255, 255, 255, 0.05);
+	}
+
+	.hotkey-action {
+		font-size: 13px;
+		color: #e2e8f0;
+	}
+
+	.hotkey-controls {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.hotkey-btn {
+		min-width: 120px;
+		padding: 6px 12px;
+		background: rgba(255, 255, 255, 0.1);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 6px;
+		color: #e2e8f0;
+		font-size: 12px;
+		font-family: monospace;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.hotkey-btn:hover {
+		background: rgba(255, 255, 255, 0.15);
+		border-color: rgba(56, 189, 248, 0.5);
+	}
+
+	.hotkey-btn.recording {
+		background: rgba(234, 179, 8, 0.2);
+		border-color: #eab308;
+		color: #eab308;
+		animation: pulse 1s infinite;
+	}
+
+	.cancel-record-btn {
+		margin-top: 12px;
+		padding: 6px 16px;
+		background: rgba(239, 68, 68, 0.1);
+		border: 1px solid rgba(239, 68, 68, 0.3);
+		border-radius: 6px;
+		color: #ef4444;
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	.cancel-record-btn:hover {
+		background: rgba(239, 68, 68, 0.2);
 	}
 </style>
