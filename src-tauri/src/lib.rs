@@ -19,7 +19,13 @@ pub fn run() {
     {
         builder = builder
             .plugin(tauri_plugin_process::init())
-            .plugin(tauri_plugin_updater::Builder::new().build());
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_autostart::init(
+                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                Some(vec!["--minimized"]),
+            ))
+            .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+            .plugin(tauri_plugin_notification::init());
     }
 
     builder
@@ -68,6 +74,13 @@ pub fn run() {
             commands::get_mcp_config,
             commands::handle_mcp_request,
             commands::is_mcp_server_running,
+            // Autostart
+            commands::enable_autostart,
+            commands::disable_autostart,
+            commands::is_autostart_enabled,
+            // Hotkey
+            commands::register_global_shortcut,
+            commands::unregister_global_shortcut,
         ])
         .setup(|app| {
             println!("[DEBUG] Nova Link setup starting...");
