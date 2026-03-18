@@ -1,13 +1,14 @@
-# Roadmap: Nova Link 首次使用引导
+# Roadmap: Nova Link
 
 **Created:** 2026-03-17
-**Core Value:** 让新用户在首次使用时快速理解应用的操作方式
+**Current Focus:** Phase 2: 桌面集成 (开机自启/快捷键/通知/历史/定时问候)
 
 ## Phase Overview
 
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
-| 1 | 首次使用引导 | Complete    | 2026-03-17 | Pending |
+| 1 | 首次使用引导 | Complete | 12 | Completed |
+| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | 实现第一阶段(v0.1.0)功能 | 6 | In Progress |
 
 ## Phase 1: 首次使用引导
 
@@ -35,6 +36,40 @@
 5. 可从设置中重新打开引导
 6. 样式与现有 glassmorphism 风格一致
 
+**Plans:** 1 plan (Completed)
+
+Plans:
+- [x] 01-PLAN.md — 实现引导组件、状态管理、集成到App
+
+---
+
+## Phase 2: 桌面集成 (开机自启/快捷键/通知/历史/定时问候)
+
+**Goal:** 实现第一阶段(v0.1.0)功能，提升用户粘性
+
+**Requirements:**
+- AUTO-01: 开机自启 - 系统启动时自动运行
+- HOTKEY-01: 全局快捷键 - 唤起对话
+- HOTKEY-02: 快捷操作 - 隐藏/显示、切换模型
+- NOTIFY-01: Windows通知 - 重要消息推送
+- HISTORY-01: 聊天历史持久化 - 关闭应用后历史可恢复
+- GREETING-01: 定时问候 - 主动发送消息
+
+**Success Criteria:**
+- [ ] 应用开机自动启动
+- [ ] 全局快捷键可唤起对话
+- [ ] 收到重要消息时有系统通知
+- [ ] 关闭应用后历史对话可恢复
+- [ ] 用户可设置定时提醒/问候
+
+**Plans:** 3 plans
+
+Plans:
+- [x] 02-01-PLAN.md — Tauri系统集成插件 (autostart/global-shortcut/notification) [COMPLETED]
+- [ ] 02-02-PLAN.md — 聊天历史持久化 (JSON存储)
+- [ ] 02-03-PLAN.md — 定时问候功能 (定时发送消息)
+
 ---
 
 *Roadmap created: 2026-03-17*
+*Last updated: 2026-03-18T07:26:00Z*
