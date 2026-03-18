@@ -64,7 +64,7 @@ See: .planning/PROJECT.md
 
 ## Pending Todos
 
-- 快捷键自定义设置 (ui, created 2026-03-18)
+(None)
 
 ## Completed Requirements
 
