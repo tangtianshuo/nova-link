@@ -8,7 +8,7 @@
 | # | Phase | Goal | Requirements | Status |
 |---|-------|------|--------------|--------|
 | 1 | 首次使用引导 | Complete | 12 | Completed |
-| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | 实现第一阶段(v0.1.0)功能 | 6 | Completed |
+| 2 | 桌面集成 (开机自启/快捷键/通知/历史/定时问候) | Complete    | 2026-03-18 | Completed |
 
 ## Phase 1: 首次使用引导
 
@@ -62,7 +62,7 @@ Plans:
 - [x] 关闭应用后历史对话可恢复
 - [x] 用户可设置定时提醒/问候
 
-**Plans:** 3 plans (Completed)
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Tauri系统集成插件 (autostart/global-shortcut/notification) [COMPLETED]
