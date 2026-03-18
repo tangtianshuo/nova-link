@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use tera::{Context, Tera};
+use rusqlite::{Connection, params};
+use thiserror::Error;
 
 /// 获取配置目录路径（exe 同级 config/ 目录）
 pub fn get_config_dir() -> PathBuf {
@@ -410,6 +412,158 @@ pub fn save_chat_history(history: &ChatHistory) -> Result<(), String> {
     let path = get_chat_history_path();
     let content = serde_json::to_string_pretty(history).map_err(|e| e.to_string())?;
     std::fs::write(&path, content).map_err(|e| e.to_string())
+}
+
+// ============ SQLite Database ============
+
+/// Database error types
+#[derive(Error, Debug)]
+pub enum DbError {
+    #[error("SQLite error: {0}")]
+    Sqlite(#[from] rusqlite::Error),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+/// Get database file path
+pub fn get_db_path() -> std::path::PathBuf {
+    get_config_dir().join("chat_history.db")
+}
+
+/// Initialize database connection and create tables
+pub fn init_db() -> Result<Connection, String> {
+    let db_path = get_db_path();
+    let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
+
+    // Create conversations table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS conversations (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL DEFAULT '',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )",
+        [],
+    ).map_err(|e| e.to_string())?;
+
+    // Create messages table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            created_at INTEGER NOT NULL,
+            FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+        )",
+        [],
+    ).map_err(|e| e.to_string())?;
+
+    // Create index for faster queries
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id)",
+        [],
+    ).map_err(|e| e.to_string())?;
+
+    Ok(conn)
+}
+
+/// Load messages from SQLite (with pagination support)
+pub fn load_messages_from_db(conversation_id: &str, limit: i64) -> Result<Vec<ChatMessage>, String> {
+    let conn = init_db()?;
+
+    let mut stmt = conn.prepare(
+        "SELECT role, content, timestamp FROM messages
+         WHERE conversation_id = ?1
+         ORDER BY timestamp DESC
+         LIMIT ?2"
+    ).map_err(|e| e.to_string())?;
+
+    let messages: Vec<ChatMessage> = stmt.query_map(params![conversation_id, limit], |row| {
+        Ok(ChatMessage {
+            msg_type: row.get(0)?,
+            content: row.get(1)?,
+            timestamp: row.get(2)?,
+        })
+    }).map_err(|e| e.to_string())?
+    .filter_map(|r| r.ok())
+    .collect();
+
+    // Return in chronological order (oldest first)
+    Ok(messages.into_iter().rev().collect())
+}
+
+/// Save messages to SQLite (replace entire conversation messages)
+pub fn save_messages_to_db(conversation_id: &str, messages: &[ChatMessage]) -> Result<(), String> {
+    let conn = init_db()?;
+
+    // Start transaction
+    conn.execute("BEGIN TRANSACTION", [])
+        .map_err(|e| e.to_string())?;
+
+    // Delete existing messages for this conversation
+    conn.execute("DELETE FROM messages WHERE conversation_id = ?1", params![conversation_id])
+        .map_err(|e| e.to_string())?;
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+
+    for msg in messages {
+        conn.execute(
+            "INSERT INTO messages (conversation_id, role, content, timestamp, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![conversation_id, msg.msg_type, msg.content, msg.timestamp, now]
+        ).map_err(|e| e.to_string())?;
+    }
+
+    // Update conversation timestamp
+    conn.execute(
+        "INSERT OR REPLACE INTO conversations (id, title, updated_at, created_at) VALUES (?1, '', ?2, ?2)",
+        params![conversation_id, now]
+    ).map_err(|e| e.to_string())?;
+
+    conn.execute("COMMIT", []).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+/// Clear messages for a conversation
+pub fn clear_messages_from_db(conversation_id: &str) -> Result<(), String> {
+    let conn = init_db()?;
+    conn.execute("DELETE FROM messages WHERE conversation_id = ?1", params![conversation_id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Migrate existing JSON data to SQLite (if SQLite is empty)
+pub fn migrate_json_to_sqlite() -> Result<(), String> {
+    let conn = init_db()?;
+
+    // Check if already migrated
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM messages",
+        [],
+        |row| row.get(0)
+    ).unwrap_or(0);
+
+    if count > 0 {
+        return Ok(()); // Already has data
+    }
+
+    // Load from JSON
+    let json_history = load_chat_history()?;
+    if json_history.messages.is_empty() {
+        return Ok(());
+    }
+
+    // Migrate to SQLite
+    save_messages_to_db("default", &json_history.messages)?;
+
+    Ok(())
 }
 
 // ============ 配置初始化 ============
